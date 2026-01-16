@@ -35,6 +35,9 @@ public class ProformaAchat {
     @Column(name = "refe", nullable = false, length = 100)
     private String refe;
 
+    @Column(name = "lien_fichier", length = 200)
+    private String lienFichier;
+
     @OneToMany(mappedBy = "proforma", fetch = FetchType.LAZY)
     private List<ProformaAchatLigne> proformaAchatLignes;
 

@@ -234,6 +234,7 @@ CREATE TABLE proforma_achats (
     fournisseur_id INTEGER NOT NULL REFERENCES fournisseurs(id),
     date_entree TIMESTAMP NOT NULL,
     montant_total DECIMAL(15,2) NOT NULL,
+    lien_fichier VARCHAR(200),
     refe VARCHAR(100) NOT NULL
 );
 
@@ -368,7 +369,6 @@ CREATE TABLE proforma_ventes (
     process_id INTEGER NOT NULL REFERENCES vente_processes(id),
     date_entree TIMESTAMP NOT NULL,
     client_id INTEGER NOT NULL REFERENCES clients(id),
-    lien_fichier VARCHAR(200),
     refe VARCHAR(100) UNIQUE NOT NULL,
     prix_total DECIMAL(15,2) NOT NULL,
     remise_pourcentage DECIMAL(4,2) DEFAULT 0,
