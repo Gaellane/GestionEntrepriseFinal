@@ -18,6 +18,9 @@ public class Lot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "numero", nullable = false, unique = true, length = 100)
+    private String numero;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;
@@ -34,6 +37,9 @@ public class Lot {
 
     @Column(name = "quantite", nullable = false)
     private Double quantite;
+
+    @Column(name = "prix_unitaire", nullable = false)
+    private Double prixUnitaire;
 
     @OneToMany(mappedBy = "lot", fetch = FetchType.LAZY)
     private List<LotMouvement> lotMouvements;

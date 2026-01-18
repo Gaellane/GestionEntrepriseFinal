@@ -28,6 +28,13 @@ public class LotMouvement {
     @JoinColumn(name = "type_mouvement_id", nullable = false)
     private StockTypeMouvement typeMouvement;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "raison_id", nullable = false)
+    private RaisonMouvement raison;
+
+    @Column(name = "chemin_document", length = 200)
+    private String cheminDocument;
+
     @Column(name = "date_entree", nullable = false)
     private LocalDateTime dateEntree;
 

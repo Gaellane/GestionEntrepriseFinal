@@ -309,12 +309,17 @@ CREATE TABLE livraison_achat_lignes (
 
 CREATE TABLE lots (
     id SERIAL PRIMARY KEY,
+    numero VARCHAR(100) UNIQUE NOT NULL,
     article_id INTEGER NOT NULL REFERENCES articles(id),
     depot_id INTEGER NOT NULL REFERENCES depots(id),
     date_arrivee TIMESTAMP NOT NULL,
     date_peremption TIMESTAMP,
+    prix_unitaire DECIMAL(15,2) NOT NULL,
     quantite DECIMAL(15,2) NOT NULL
 );
+
+CREATE SEQUENCE IF NOT EXISTS lot_num_seq START 1;
+
 
 CREATE TABLE stock_type_mouvements (
     id SERIAL PRIMARY KEY,
@@ -322,12 +327,20 @@ CREATE TABLE stock_type_mouvements (
     description TEXT
 );
 
+------------- NAMPIANA TABLES -------------
+CREATE TABLE raison_mouvements (
+    id SERIAL PRIMARY KEY,
+    raison_name VARCHAR(100) NOT NULL,
+    description TEXT
+);
 CREATE TABLE lot_mouvements (
     id SERIAL PRIMARY KEY,
     lot_id INTEGER NOT NULL REFERENCES lots(id),
     quantite DECIMAL(15,2) NOT NULL,
     type_mouvement_id INTEGER NOT NULL REFERENCES stock_type_mouvements(id),
+    raison_id INTEGER NOT NULL REFERENCES raison_mouvements(id),
     date_entree TIMESTAMP NOT NULL,
+    chemin_document VARCHAR(200),
     description TEXT
 );
 
