@@ -161,6 +161,7 @@ CREATE TABLE articles (
     id SERIAL PRIMARY KEY,
     refe VARCHAR(100) UNIQUE NOT NULL,
     article_nom VARCHAR(100) NOT NULL,
+    valorisation VARCHAR(50) NOT NULL,
     description TEXT,
     categorie_id INTEGER REFERENCES categories(id),
     unite_id INTEGER REFERENCES unites(id)
@@ -314,7 +315,9 @@ CREATE TABLE lots (
     depot_id INTEGER NOT NULL REFERENCES depots(id),
     date_arrivee TIMESTAMP NOT NULL,
     date_peremption TIMESTAMP,
-    quantite DECIMAL(15,2) NOT NULL
+    quantite DECIMAL(15,2) NOT NULL,
+    quantite_restante DECIMAL(15,2) NOT NULL,
+    prix_unitaire DECIMAL(15,2) NOT NULL,
 );
 
 CREATE TABLE stock_type_mouvements (

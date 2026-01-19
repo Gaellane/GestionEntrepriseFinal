@@ -23,6 +23,9 @@ public class Article {
     @Column(name = "article_nom", nullable = false, length = 100)
     private String articleNom;
 
+    @Column(name = "valorisation", nullable = false, length = 50)
+    private String valorisation;
+
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
@@ -69,4 +72,15 @@ public class Article {
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
     private List<InventaireLigne> inventaireLignes;
+
+
+    public boolean isCmup(){
+        return valorisation.compareToIgnoreCase("cmup")==0;
+    }
+    public boolean isFifo(){
+        return valorisation.compareToIgnoreCase("fifo")==0;
+    }
+    public boolean isLifo(){
+        return valorisation.compareToIgnoreCase("lifo")==0;
+    }
 }

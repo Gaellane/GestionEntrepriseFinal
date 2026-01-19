@@ -35,6 +35,12 @@ public class Lot {
     @Column(name = "quantite", nullable = false)
     private Double quantite;
 
+    @Column(name = "quantite_restante", nullable = false)
+    private Double quantiteRestante;
+
+    @Column(name = "prix_unitaire", nullable = false)
+    private Double prixUnitaire;
+
     @OneToMany(mappedBy = "lot", fetch = FetchType.LAZY)
     private List<LotMouvement> lotMouvements;
 }
