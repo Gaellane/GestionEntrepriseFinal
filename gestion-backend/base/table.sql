@@ -476,3 +476,13 @@ CREATE TABLE caisse_mouvements (
     entity_id INTEGER NOT NULL REFERENCES entities(id),
     details TEXT
 );
+
+-- Updates hanatsarana tracabilite changement de roles
+
+CREATE TABLE roles_attribution_historiques(
+    id SERIAL PRIMARY KEY,
+    utilisateur_id INTEGER REFERENCES utilisateurs(id),
+    role_id INTEGER REFERENCES roles(id),
+    date_entree TIMESTAMP NOT NULL
+);
+
