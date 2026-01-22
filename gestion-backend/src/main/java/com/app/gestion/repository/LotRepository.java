@@ -61,5 +61,22 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
     );
 
 
-
+    @Query(value = """
+        SELECT *
+        FROM (
+            SELECT l.*,
+                SUM(l.quantite) OVER () AS cumul
+            FROM lot l
+            WHERE l.article_id = :articleId
+            AND l.depot_id = :depotId
+            AND l.quantite > 0
+        ) t
+        WHERE t.cumul <= :quantite
+        OR t.cumul - t.quantite < :quantite
+    """, nativeQuery = true)
+    List<Lot> findCMUP(
+        @Param("articleId") Integer articleId,
+        @Param("depotId") Integer depotId,
+        @Param("quantite") Double quantite
+    );
 }

@@ -29,9 +29,6 @@ public class ProformaVente {
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
-    @Column(name = "lien_fichier", length = 200)
-    private String lienFichier;
-
     @Column(name = "refe", unique = true, nullable = false, length = 100)
     private String refe;
 

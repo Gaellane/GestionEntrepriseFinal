@@ -21,14 +21,13 @@ import com.app.gestion.repository.LotRepository;
 import com.app.gestion.repository.RaisonMouvementRepository;
 import com.app.gestion.repository.StockTypeMouvementRepository;
 import com.app.gestion.repository.UtilisateurRepository;
+import com.app.gestion.exception.InsufficientQuantityException;
 
 import ch.qos.logback.core.joran.action.Action;
 import jakarta.transaction.Transactional;
 
 
 public class LotService {
-    @Value("${app.method.lot.selection}")
-    private String method;
 
     private final RaisonMouvementRepository raisonMouvementRepository;
     private final LotMouvementRepository lotMouvementRepository;
@@ -56,9 +55,46 @@ public class LotService {
 
 
     @Transactional
+    public List<Lot> transfererLots(Integer articleId, Integer depotSourceId, Integer depotDestId, Double quantite, Integer raisonId, String description,LocalDateTime dateTransfert, Integer userId) throws Exception {
+        List<Lot> lots=new ArrayList<>();
+        List<Lot> candidateLots = getLotsByMethod(articleId, depotSourceId, quantite);
+        double totalAvailable = candidateLots.stream().mapToDouble(l -> l.getQuantite()).sum();
+        if (totalAvailable < quantite) {
+            throw new InsufficientQuantityException("Quantité insuffisante en stock");
+        }
+
+        for (Lot lot : candidateLots) {
+            if (quantite <= 0) {
+                break;
+            }
+            Double qteToTransferer = Math.min(lot.getQuantite(), quantite);
+            lots.add(transfererLot(lot.getId(), depotSourceId, depotDestId, qteToTransferer, raisonId, description, dateTransfert, userId));
+            quantite -= qteToTransferer;
+        }
+        
+        return lots;
+    }
+
+    @Transactional
+    public Lot transfererLot(Integer articleId,Integer depotSourceId, Integer depotDestId, Double quantite, Integer raisonId, String description,LocalDateTime dateTransfert, Integer userId) throws Exception {
+
+        Lot lotSorti = sortirLot(articleId, quantite, raisonId, description, dateTransfert, userId);
+        Lot lotEntre = entrerLot(articleId, depotDestId, quantite, raisonId, description, dateTransfert, lotSorti.getDatePeremption(), userId);
+
+        return lotEntre;
+    }
+
+
+    @Transactional
     public List<Lot> sortirLots(Integer articleId, Double quantite,Integer raisonId, String description,LocalDateTime dateSortie, Integer userId) throws Exception {
         List<Lot> lots=new ArrayList<>();
-        for (Lot lot : getLotsByMethod(articleId, null, quantite)) {
+        List<Lot> candidateLots = getLotsByMethod(articleId, null, quantite);
+        double totalAvailable = candidateLots.stream().mapToDouble(l -> l.getQuantite()).sum();
+        if (totalAvailable < quantite) {
+            throw new InsufficientQuantityException("Quantité insuffisante en stock");
+        }
+
+        for (Lot lot : candidateLots) {
             if (quantite <= 0) {
                 break;
             }
@@ -66,7 +102,7 @@ public class LotService {
             lots.add(sortirLot(lot.getId(), qteToSortir, raisonId, description, dateSortie, userId));
             quantite -= qteToSortir;
         }
-        
+
         return lots;
     }
 
@@ -109,19 +145,21 @@ public class LotService {
     }
 
 
-
-
-
     
-    public List<Lot> getLotsByMethod(Integer articleId, Integer depotId, Double quantite) {
+    public List<Lot> getLotsByMethod(Integer articleId, Integer depotId, Double quantite) throws Exception {
+        Article a = articleRepository.findById(articleId).orElseThrow(() -> new IllegalArgumentException("Article non trouvé"));
+        String method = a.getValorisation();
         if ("FIFO".equalsIgnoreCase(method)) {
             return lotRepository.findFIFO(articleId, depotId, quantite);
         } else if ("LIFO".equalsIgnoreCase(method)) {
             return lotRepository.findLIFO(articleId, depotId, quantite);
+        } else if("CMUP".equalsIgnoreCase(method)) {
+            return lotRepository.findCMUP(articleId, depotId, quantite);
         } else {
-            throw new IllegalArgumentException("Méthode de sélection de lot inconnue : " + method);
+            throw new IllegalArgumentException("Méthode de valorisation inconnue : " + method);
         }
     }
+
 
 
     @Transactional
@@ -173,5 +211,4 @@ public class LotService {
         return savedLot;
     }
 
-    
 }

@@ -161,6 +161,7 @@ CREATE TABLE articles (
     id SERIAL PRIMARY KEY,
     refe VARCHAR(100) UNIQUE NOT NULL,
     article_nom VARCHAR(100) NOT NULL,
+    valorisation VARCHAR(50) NOT NULL,
     description TEXT,
     categorie_id INTEGER REFERENCES categories(id),
     unite_id INTEGER REFERENCES unites(id)
@@ -234,6 +235,7 @@ CREATE TABLE proforma_achats (
     fournisseur_id INTEGER NOT NULL REFERENCES fournisseurs(id),
     date_entree TIMESTAMP NOT NULL,
     montant_total DECIMAL(15,2) NOT NULL,
+    lien_fichier VARCHAR(200),
     refe VARCHAR(100) NOT NULL
 );
 
@@ -314,8 +316,10 @@ CREATE TABLE lots (
     depot_id INTEGER NOT NULL REFERENCES depots(id),
     date_arrivee TIMESTAMP NOT NULL,
     date_peremption TIMESTAMP,
+    quantite DECIMAL(15,2) NOT NULL,
+    quantite_restante DECIMAL(15,2) NOT NULL,
     prix_unitaire DECIMAL(15,2) NOT NULL,
-    quantite DECIMAL(15,2) NOT NULL
+
 );
 
 CREATE SEQUENCE IF NOT EXISTS lot_num_seq START 1;
@@ -381,7 +385,6 @@ CREATE TABLE proforma_ventes (
     process_id INTEGER NOT NULL REFERENCES vente_processes(id),
     date_entree TIMESTAMP NOT NULL,
     client_id INTEGER NOT NULL REFERENCES clients(id),
-    lien_fichier VARCHAR(200),
     refe VARCHAR(100) UNIQUE NOT NULL,
     prix_total DECIMAL(15,2) NOT NULL,
     remise_pourcentage DECIMAL(4,2) DEFAULT 0,
