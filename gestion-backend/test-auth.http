@@ -8,7 +8,8 @@ Content-Type: {{contentType}}
     "nom": "Test User",
     "email": "test@gmail.com",
     "motDePasse": "test",
-    "entityId": 1
+    "entityId": 1,
+    "roleId":1
 }
 
 
