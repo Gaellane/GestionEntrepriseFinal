@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ShoppingCartIcon,
   ChartBarIcon,
@@ -63,22 +64,30 @@ const SideBar = () => {
         { name: 'rapports', icon: <ChartPieIcon className="w-4 h-4" /> }
       ]
     }
+    ,
+    stock: {
+      icon: <ListBulletIcon className="w-5 h-5" />,
+      subItems: [
+        { name: 'Entrée', icon: <DocumentPlusIcon className="w-4 h-4" />, to: '/stock?type=ENTREE' },
+        { name: 'Sortie', icon: <DocumentCheckIcon className="w-4 h-4" />, to: '/stock?type=SORTIE' }
+      ]
+    }
   };
 
   const renderSubItems = (category) => {
     return menuItems[category].subItems.map((item, index) => (
       <li key={index} className="pl-12 py-2 hover:bg-emerald-50 transition-colors duration-150">
-        <a 
-          href="#" 
-          className="flex items-center text-gray-600 hover:text-emerald-700 text-sm group"
-        >
-          <span className="mr-3 text-emerald-500 group-hover:text-emerald-600 transition-colors">
-            {item.icon}
-          </span>
-          <span className="font-medium">
-            {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-          </span>
-        </a>
+        {item.to ? (
+          <Link to={item.to} className="flex items-center text-gray-600 hover:text-emerald-700 text-sm group">
+            <span className="mr-3 text-emerald-500 group-hover:text-emerald-600 transition-colors">{item.icon}</span>
+            <span className="font-medium">{item.name}</span>
+          </Link>
+        ) : (
+          <a href="#" className="flex items-center text-gray-600 hover:text-emerald-700 text-sm group">
+            <span className="mr-3 text-emerald-500 group-hover:text-emerald-600 transition-colors">{item.icon}</span>
+            <span className="font-medium">{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</span>
+          </a>
+        )}
       </li>
     ));
   };

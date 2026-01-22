@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import com.app.gestion.model.Article;
 import com.app.gestion.model.AuditLog;
@@ -27,6 +28,7 @@ import ch.qos.logback.core.joran.action.Action;
 import jakarta.transaction.Transactional;
 
 
+@Service
 public class LotService {
 
     private final RaisonMouvementRepository raisonMouvementRepository;
