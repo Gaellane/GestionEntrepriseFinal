@@ -1,0 +1,15 @@
+# Adaptez les configuration a votre environnemnt
+
+spring.application.name=gestion
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/gest_emp_stock
+spring.datasource.username=gest_emp_sudo
+spring.datasource.password=gest_emp
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+
+jwt.secret=cle_tres_secrete_tsy_misy_manana
+jwt.expiration=86400000
+
+logging.level.org.springframework.security=DEBUG
+server.port=8180

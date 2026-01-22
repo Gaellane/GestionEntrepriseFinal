@@ -1,16 +1,22 @@
 package com.app.gestion.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.app.gestion.model.Entity;
 import com.app.gestion.model.Role;
+import com.app.gestion.model.RolesAttributionHistorique;
 import com.app.gestion.model.Utilisateur;
 import com.app.gestion.repository.EntityRepository;
 import com.app.gestion.repository.RoleRepository;
+import com.app.gestion.repository.RolesAttributionHistoriqueRepository;
 import com.app.gestion.repository.UtilisateurRepository;
 import com.app.gestion.security.dto.RegisterRequest;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class UtilisateurService {
@@ -23,6 +29,8 @@ public class UtilisateurService {
     
     @Autowired
     private EntityRepository entityRepository;
+
+    @Autowired RolesAttributionHistoriqueRepository rolesAttributionHistoriqueRepository;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -37,9 +45,11 @@ public class UtilisateurService {
         return utilisateurRepository.findByEmail(email).orElseThrow(()-> new Exception("Utilisateur avec l'email :"+email+" introuvable"));
     } 
 
+    @Transactional
     public Utilisateur createUser(RegisterRequest request) throws Exception {
-        // Role role = roleRepository.findById(request.getRoleId())
-        //         .orElseThrow(() -> new Exception("Rôle introuvable"));
+        System.out.println("Nous allons creer un user");
+        Role role = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new Exception("Rôle introuvable"));
         Entity entity = entityRepository.findById(request.getEntityId())
                 .orElseThrow(() -> new Exception("Entité introuvable"));
         
@@ -47,11 +57,20 @@ public class UtilisateurService {
                 .nom(request.getNom())
                 .email(request.getEmail())
                 .motDePasse(passwordEncoder.encode(request.getMotDePasse()))
-                // .role(role)
+                .role(role)
                 .entity(entity)
                 .build();
         try {
-            return utilisateurRepository.save(user);
+            RolesAttributionHistorique rolesAttributionHistorique = new RolesAttributionHistorique();
+            rolesAttributionHistorique.setRole(role);
+            rolesAttributionHistorique.setDateEntree(LocalDateTime.now());
+            
+            Utilisateur savedUser =  utilisateurRepository.save(user);
+            rolesAttributionHistorique.setUtilisateur(savedUser);
+
+            rolesAttributionHistoriqueRepository.save(rolesAttributionHistorique);
+
+            return savedUser;
             
         } catch (Exception e) {
             throw new Exception("Erreur lors de l'enregistrement de l'utilisateur");

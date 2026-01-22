@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:8180
+@contentType = application/json
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Test User",
+    "email": "test@gmail.com",
+    "motDePasse": "test",
+    "entityId": 1,
+    "roleId":1
+}
+
+
+
+POST {{baseUrl}}/login
+Content-Type: {{contentType}}
+
+{
+    "email":"test@gmail.com",
+    "motDePasse":"test",
+    "nom":"Mr Test",
+    "entityId":1
+}
+
