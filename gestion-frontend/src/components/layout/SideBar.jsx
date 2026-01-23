@@ -1,94 +1,79 @@
 import { useState } from 'react';
-import {
-  ShoppingCartIcon,
-  ChartBarIcon,
-  TruckIcon,
-  CubeIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  UserIcon,
-  ArrowRightOnRectangleIcon,
-  HomeIcon,
-  CogIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
-  DocumentPlusIcon,
-  DocumentCheckIcon,
-  ListBulletIcon,
-  PlusCircleIcon,
-  ChartPieIcon
-} from '@heroicons/react/24/outline';
+import { NavLink } from 'react-router-dom';
+import { ChevronDownIcon, ChevronUpIcon, CubeIcon, UserIcon, ArrowRightEndOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../hooks/useAuth';
+import { SIDEBAR_CONFIG } from '../../config/sideBarConfig';
+import { usePermissions } from '../../config/permissions';
+
 
 const SideBar = () => {
-  const [openCategories, setOpenCategories] = useState({
-    achats: false,
-    vente: false,
-    livraison: false,
-    inventaire: false
-  });
+  const {hasPermission} = usePermissions();
+  const { user, logout } = useAuth();
+  const [openCategories, setOpenCategories] = useState({});
 
-  const toggleCategory = (category) => {
+  const toggleCategory = (categoryId) => {
     setOpenCategories(prev => ({
       ...prev,
-      [category]: !prev[category]
+      [categoryId]: !prev[categoryId]
     }));
   };
 
-  const menuItems = {
-    achats: {
-      icon: <ShoppingCartIcon className="w-5 h-5" />,
-      subItems: [
-        { name: 'proforma', icon: <DocumentTextIcon className="w-4 h-4" /> },
-        { name: 'demandes', icon: <ClipboardDocumentListIcon className="w-4 h-4" /> }
-      ]
-    },
-    vente: {
-      icon: <ChartBarIcon className="w-5 h-5" />,
-      subItems: [
-        { name: 'proforma', icon: <DocumentTextIcon className="w-4 h-4" /> },
-        { name: 'insertion', icon: <DocumentPlusIcon className="w-4 h-4" /> }
-      ]
-    },
-    livraison: {
-      icon: <TruckIcon className="w-5 h-5" />,
-      subItems: [
-        { name: 'liste', icon: <ListBulletIcon className="w-4 h-4" /> },
-        { name: 'enregistrement', icon: <DocumentCheckIcon className="w-4 h-4" /> }
-      ]
-    },
-    inventaire: {
-      icon: <CubeIcon className="w-5 h-5" />,
-      subItems: [
-        { name: 'initier', icon: <PlusCircleIcon className="w-4 h-4" /> },
-        { name: 'rapports', icon: <ChartPieIcon className="w-4 h-4" /> }
-      ]
+  // Fonction pour vérifier si un élément doit être visible
+  const isVisible = (item) => {
+    // Si pas connecté, ne montrer que les éléments publics
+    if (!user) return false;
+    
+    // Éléments sans permission (toujours visibles si connecté)
+    if (!item.permission && item.alwaysVisible) return true;
+    
+    // Vérifier la permission
+    if (item.permission && user.role) {
+      return hasPermission(user.role, item.permission);
     }
+
+    if (item.roles && user.role) {
+      return item.roles.includes(user.role) ;
+    }
+    
+    return false;
   };
 
-  const renderSubItems = (category) => {
-    return menuItems[category].subItems.map((item, index) => (
-      <li key={index} className="pl-12 py-2 hover:bg-emerald-50 transition-colors duration-150">
-        <a 
-          href="#" 
-          className="flex items-center text-gray-600 hover:text-emerald-700 text-sm group"
-        >
-          <span className="mr-3 text-emerald-500 group-hover:text-emerald-600 transition-colors">
-            {item.icon}
-          </span>
-          <span className="font-medium">
-            {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-          </span>
-        </a>
-      </li>
-    ));
+  // Fonction pour obtenir les éléments de menu filtrés
+  const getFilteredMenuItems = () => {
+    if (!user) return { categories: [], admin: null, secondary: [] };
+    console.log("User:",user);
+    console.log("nb categ",SIDEBAR_CONFIG.categories.length);
+    const filteredCategories = SIDEBAR_CONFIG.categories
+      .filter(category => {
+        console.log(`Is visible:${category.label}`,isVisible(category));
+        if (!isVisible(category)) {
+          return false;
+        }
+        
+        // Filtrer les sous-items visibles
+        const visibleSubItems = category.subItems?.filter(isVisible) || [];
+        
+        // Retourner la catégorie seulement si elle a des sous-items visibles
+        return visibleSubItems.length > 0;
+      })
+      .map(category => ({
+        ...category,
+        subItems: category.subItems?.filter(isVisible) || []
+      }));    
+
+    return {
+      categories: filteredCategories,
+    };
   };
+
+  const { categories } = getFilteredMenuItems();
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-white to-gray-50 min-h-screen border-r border-gray-200 shadow-sm flex flex-col overflow-y-scroll">
+    <aside className="w-64 bg-linear-to-b from-white to-gray-50 min-h-screen border-r border-gray-200 shadow-sm flex flex-col overflow-y-scroll">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-linear-to-r from-emerald-500 to-green-600 rounded-lg flex items-center justify-center">
             <CubeIcon className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -100,43 +85,29 @@ const SideBar = () => {
 
       {/* Menu principal */}
       <nav className="flex-1 p-4 overflow-y-auto">
-        {/* Lien Dashboard */}
-        <div className="mb-6">
-          <a 
-            href="#" 
-            className="flex items-center space-x-3 p-3 text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors group"
-          >
-            <HomeIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="font-medium">Dashboard</span>
-          </a>
-        </div>
-
+        {/* Catégories principales */}
         <ul className="space-y-1">
-          {Object.keys(menuItems).map((category) => (
-            <li key={category} className="mb-1">
-              {/* Bouton catégorie */}
+          {categories.map((category) => (
+            <li key={category.id} className="mb-1">
               <button
-                onClick={() => toggleCategory(category)}
+                onClick={() => toggleCategory(category.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 group ${
-                  openCategories[category] 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                  openCategories[category.id]
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg transition-colors ${
-                    openCategories[category] 
-                      ? 'bg-emerald-100 text-emerald-600' 
+                    openCategories[category.id]
+                      ? 'bg-emerald-100 text-emerald-600'
                       : 'bg-gray-100 text-gray-600 group-hover:text-emerald-600'
                   }`}>
-                    {menuItems[category].icon}
+                    {category.icon}
                   </div>
-                  <span className="font-medium">
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </span>
+                  <span className="font-medium">{category.label}</span>
                 </div>
-                {/* Flèche toggle */}
-                {openCategories[category] ? (
+                {openCategories[category.id] ? (
                   <ChevronUpIcon className="w-4 h-4 transition-transform" />
                 ) : (
                   <ChevronDownIcon className="w-4 h-4 transition-transform" />
@@ -144,25 +115,34 @@ const SideBar = () => {
               </button>
 
               {/* Sous-menu */}
-              {openCategories[category] && (
+              {openCategories[category.id] && category.subItems.length > 0 && (
                 <ul className="mt-1 animate-fadeIn">
-                  {renderSubItems(category)}
+                  {category.subItems.map((subItem) => (
+                    <li key={subItem.id} className="pl-12 py-2 hover:bg-emerald-50 transition-colors duration-150">
+                      <NavLink
+                        to={subItem.path}
+                        className={({ isActive }) =>
+                          `flex items-center text-sm group ${
+                            isActive
+                              ? 'text-emerald-700 font-medium'
+                              : 'text-gray-600 hover:text-emerald-700'
+                          }`
+                        }
+                      >
+                        <span className={`mr-3 transition-colors ${
+                          ({ isActive }) => isActive ? 'text-emerald-600' : 'text-emerald-500 group-hover:text-emerald-600'
+                        }`}>
+                          {subItem.icon}
+                        </span>
+                        <span>{subItem.label}</span>
+                      </NavLink>
+                    </li>
+                  ))}
                 </ul>
               )}
             </li>
           ))}
         </ul>
-
-        {/* Lien Paramètres */}
-        <div className="mt-8">
-          <a 
-            href="#" 
-            className="flex items-center space-x-3 p-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors group"
-          >
-            <CogIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-            <span className="font-medium">Paramètres</span>
-          </a>
-        </div>
       </nav>
 
       {/* Section utilisateur */}
@@ -172,10 +152,16 @@ const SideBar = () => {
             <UserIcon className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-gray-800">John Doe</p>
-            <p className="text-xs text-gray-500">Administrateur</p>
+            <p className="font-medium text-gray-800">{user?.name || 'Utilisateur'}</p>
+            <p className="text-xs text-gray-500 capitalize">{user?.role || 'Invitè'}</p>
           </div>
-          <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-500 group-hover:text-red-500 transition-colors" />
+          <button
+            onClick={logout}
+            className="p-2 hover:bg-red-50 rounded-md transition-colors"
+            title="Déconnexion"
+          >
+            <ArrowRightEndOnRectangleIcon className="w-5 h-5 text-gray-500 hover:text-red-500 transition-colors" />
+          </button>
         </div>
       </div>
 
