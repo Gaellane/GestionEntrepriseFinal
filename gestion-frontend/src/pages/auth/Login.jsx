@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { authApi } from '../../api';
+import { useNavigate } from 'react-router-dom';
 import {
   EnvelopeIcon,
   KeyIcon,
@@ -14,10 +17,29 @@ import {
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Formulaire soumis");
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await authApi.login({ email, motDePasse: password });
+      console.log("JSON:",response);
+      login(response); // response contient { token }
+      navigate('/home');
+    } catch (err) {
+      console.error(err);
+      setError('Email ou mot de passe incorrect');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -42,6 +64,11 @@ const Login = () => {
 
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
           {/* Champ Email */}
           <div>
             <label 
@@ -61,6 +88,8 @@ const Login = () => {
                 type="email"
                 required
                 placeholder="vous@exemple.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none"
                 autoComplete="email"
               />
@@ -95,6 +124,8 @@ const Login = () => {
                 type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none"
                 autoComplete="current-password"
               />
@@ -138,10 +169,15 @@ const Login = () => {
           {/* Bouton de connexion */}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowRightOnRectangleIcon className="w-5 h-5" />
-            <span>Se connecter</span>
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            )}
+            <span>{loading ? 'Connexion...' : 'Se connecter'}</span>
           </button>
         </form>
 

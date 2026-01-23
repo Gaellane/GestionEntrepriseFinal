@@ -115,9 +115,7 @@ const ProformaAchatSaisie = () => {
   };
 
   return (
-    <div className="flex">
-      <SideBar />
-      <div className="min-h-screen max-h-full bg-gradient-to-br from-gray-50 to-gray-100 p-6 overflow-y-scroll flex-1">
+      <div>
         <div className="max-w-6xl mx-auto">
           {/* En-tête */}
           <div className="mb-8">
@@ -448,7 +446,6 @@ const ProformaAchatSaisie = () => {
           </form>
         </div>
       </div>
-    </div>
   );
 };
 
