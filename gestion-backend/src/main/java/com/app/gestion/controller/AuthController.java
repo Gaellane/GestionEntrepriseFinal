@@ -33,20 +33,33 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getMotDePasse()
-                )
-        );
-
-        UserDetails user = (UserDetails) auth.getPrincipal();
         Map<String,Object> response = new HashMap<>();
-        String token = jwtUtil.generateToken(user);
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getMotDePasse()
+                    )
+            );
+    
+            UserDetails user = (UserDetails) auth.getPrincipal();
+            Utilisateur dbUser = utilisateurService.findByEmail(user.getUsername());
+    
+            String token = jwtUtil.generateToken(user);
+            Map<String,Object> userData = new HashMap<>();
+                userData.put("name",dbUser.getNom());
+                userData.put("role",dbUser.getRole().getRoleCode());
+    
+            response.put("token", token);
+            response.put("user", userData);
+    
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
 
-        response.put("token", token);
 
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
