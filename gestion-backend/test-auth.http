@@ -9,7 +9,7 @@ Content-Type: {{contentType}}
     "email": "test@gmail.com",
     "motDePasse": "test",
     "entityId": 1,
-    "roleId":1
+    "roleId":11
 }
 
 
@@ -19,8 +19,6 @@ Content-Type: {{contentType}}
 
 {
     "email":"test@gmail.com",
-    "motDePasse":"test",
-    "nom":"Mr Test",
-    "entityId":1
+    "motDePasse":"test"
 }
 
