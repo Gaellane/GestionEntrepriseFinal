@@ -5,12 +5,41 @@ POST {{baseUrl}}/register
 Content-Type: {{contentType}}
 
 {
-    "nom": "Test User",
-    "email": "test@gmail.com",
-    "motDePasse": "test",
+    "nom": "Admin",
+    "email": "admin@gmail.com",
+    "motDePasse": "admin",
+    "entityId": 1,
+    "roleId":1
+}
+
+
+
+{
+    "nom": "Magasinier Reception",
+    "email": "magrecept@gmail.com",
+    "motDePasse": "magrecept",
     "entityId": 1,
     "roleId":11
 }
+
+
+{
+    "nom": "Magasinier Sortie",
+    "email": "magsort@gmail.com",
+    "motDePasse": "magsort",
+    "entityId": 1,
+    "roleId":12
+}
+
+
+{
+    "nom": "Responsable Magasinier",
+    "email": "respmag@gmail.com",
+    "motDePasse": "respmag",
+    "entityId": 1,
+    "roleId":6
+}
+
 
 
 

@@ -136,7 +136,33 @@ export const SIDEBAR_CONFIG = {
           permission: 'view_inventory_reports'
         }
       ]
-    }
+    }, 
+
+    {
+      id: 'stock',
+      label: 'Stock',
+      icon: <CubeIcon className="w-5 h-5" />,
+      permission: 'stock',
+      roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT,ROLES.MAGSORT],
+      subItems: [
+        {
+          id: 'entree',
+          label: 'Entrer de stock',
+          path: '/stock/1',
+          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT],
+          icon: <PlusCircleIcon className="w-4 h-4" />,
+          permission: 'enter_stock'
+        },
+        {
+          id: 'sortie',
+          label: 'Sortie de stock',
+          path: '/stock/2',
+          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGSORT],
+          icon: <ChartPieIcon className="w-4 h-4" />,
+          permission: 'exit_stock'
+        }
+      ]
+    }, 
   ]
 };
 
@@ -237,6 +263,7 @@ const canAccessItemBasedOnPermission = (item, userRole) => {
 };
 
 const hasPermissionToItem = (item, user) => {
+  console.log("Checking access for item:", item, "and user:", user);
   if (!user || !user.role) return false;
   
   // Vérifier par rôle
@@ -255,6 +282,7 @@ const hasPermissionToItem = (item, user) => {
 
 // Cette fonction dépend de votre système de permissions
 const hasRolePermission = (role, permission) => {
-  const permissions = ROLE_PERMISSIONS[role] || [];
+  const roleKey = role ? role.toString().toUpperCase() : null;
+  const permissions = ROLE_PERMISSIONS[roleKey] || [];
   return permissions.includes(permission);
 };

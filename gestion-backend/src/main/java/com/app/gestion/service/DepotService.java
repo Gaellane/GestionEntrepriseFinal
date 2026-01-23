@@ -53,4 +53,41 @@ public class DepotService {
                 .map(d -> DepotDTO.builder().id(d.getId()).depotName(d.getDepotName()).build())
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Retourne les dépôts en fonction du type de mouvement :
+     * type == 1 -> dépôts de l'entité de l'utilisateur (entrée)
+     * type == 2 -> dépôts des autres entités (sortie)
+     */
+    public List<DepotDTO> getDepotsForMovement(int type) throws Exception {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new IllegalArgumentException("Utilisateur non authentifié");
+        }
+
+        String email = auth.getName();
+        var utilisateur = utilisateurService.findByEmail(email);
+        Integer entityId = utilisateur.getEntity().getId();
+
+        List<EntityDepot> entityDepots;
+        if (type == 1) {
+            // Entrée : dépôts appartenant à l'entité de l'utilisateur
+            entityDepots = entityDepotRepository.findByEntityId(entityId);
+        } else if (type == 2) {
+            // Sortie : dépôts des autres entités (exclure l'entité courante)
+            entityDepots = entityDepotRepository.findAll()
+                    .stream()
+                    .filter(ed -> ed.getEntity() != null && !entityId.equals(ed.getEntity().getId()))
+                    .collect(Collectors.toList());
+        } else {
+            // Par défaut, retourner dépôts de l'utilisateur
+            entityDepots = entityDepotRepository.findByEntityId(entityId);
+        }
+
+        return entityDepots.stream()
+                .map(ed -> ed.getDepot())
+                .distinct()
+                .map(d -> DepotDTO.builder().id(d.getId()).depotName(d.getDepotName()).build())
+                .collect(Collectors.toList());
+    }
 }

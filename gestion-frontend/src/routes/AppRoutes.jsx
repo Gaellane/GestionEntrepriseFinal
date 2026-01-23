@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import ProformaAchatSaisie from "../pages/achat/ProformaAchatSaisie";
 
-import Stock from "../pages/stock/Stock";
+import MvtStockSaisie from "../pages/stock/MvtStockSaisie";
 import ProtectedRoute from "./ProtectedRoutes";
 import MainLayout from "../components/layout/MainLayout";
 import Unauthorized from "../pages/auth/Unauthorized";
@@ -18,7 +18,8 @@ const AppRoutes = () => {
           <Route path='/demande' element={<ProformaAchatSaisie />} />
 
           {/* Stock group */}
-          <Route path='/stock' element={<Stock />} />
+          <Route path='/stock' element={<MvtStockSaisie />} />
+          <Route path='/stock/:type' element={<MvtStockSaisie />} />
 
           <Route path='/login' element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />          

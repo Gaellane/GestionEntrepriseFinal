@@ -10,6 +10,7 @@ const SideBar = () => {
   const {hasPermission} = usePermissions();
   const { user, logout } = useAuth();
   const [openCategories, setOpenCategories] = useState({});
+  const normalizedRole = user?.role ? user.role.toString().toUpperCase() : null;
 
   const toggleCategory = (categoryId) => {
     setOpenCategories(prev => ({
@@ -23,18 +24,22 @@ const SideBar = () => {
     // Si pas connecté, ne montrer que les éléments publics
     if (!user) return false;
     
-    // Éléments sans permission (toujours visibles si connecté)
-    if (!item.permission && item.alwaysVisible) return true;
-    
-    // Vérifier la permission
-    if (item.permission && user.role) {
-      return hasPermission(user.role, item.permission);
+    // Toujours visible explicitement
+    if (item.alwaysVisible) return true;
+
+    // Vérifier par rôle si défini
+    if (item.roles && user.role) {
+      return item.roles.includes(user.role) || item.roles.includes(normalizedRole);
     }
 
-    if (item.roles && user.role) {
-      return item.roles.includes(user.role) ;
+    // Vérifier par permission si défini (usePermissions.hasPermission prend la permission)
+    if (item.permission) {
+      return hasPermission(item.permission);
     }
-    
+
+    // Si ni rôle ni permission spécifiés, considérer visible pour tout utilisateur connecté
+    if (!item.roles && !item.permission) return true;
+
     return false;
   };
 
