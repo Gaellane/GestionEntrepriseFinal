@@ -15,6 +15,7 @@ INSERT into departments (id, department_name) values
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
+    role_code VARCHAR(100) NOT NULL,
     role_name VARCHAR(100) NOT NULL,
     niveau_acces INTEGER NOT NULL,
     department_id INTEGER NOT NULL REFERENCES departments(id)
@@ -26,17 +27,17 @@ CREATE TABLE roles (
 -- magasin 49 -> 40
 -- vente 39 -> 30
 -- achat 29 -> 20
-INSERT INTO roles (role_name, niveau_acces, department_id) VALUES 
-('Admin', 100, 1),
-('Responsable Achat', 11, 3),
-('Employe Achat', 1, 3),
-('Responsable Vente', 11, 4),
-('Employe Vente', 1, 4),
-('Responsable Magasin', 11, 5),
-('Employe Magasin', 1, 5),
-('Responsable Finance', 11, 6),
-('Employe Finance', 1, 6),
-('Responsable Direction', 11, 2);
+INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
+('ADMIN','Admin', 100, 1),
+('RESP_ACHAT','Responsable Achat', 11, 3),
+('EMP_ACHAT','Employe Achat', 1, 3),
+('RESP_VENTE','Responsable Vente', 11, 4),
+('EMP_VENTE','Employe Vente', 1, 4),
+('RESP_MAGASIN','Responsable Magasin', 11, 5),
+('EMP_MAGASIN','Employe Magasin', 1, 5),
+('RESP_FINANCE','Responsable Finance', 11, 6),
+('EMP_FINANCE','Employe Finance', 1, 6),
+('RESP_DIRECTION','Responsable Direction', 11, 2);
 
 CREATE TABLE depots (
     id SERIAL PRIMARY KEY,
