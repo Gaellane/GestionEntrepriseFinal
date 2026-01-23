@@ -75,8 +75,5 @@ INSERT INTO depots(depot_name) VALUES
 INSERT INTO entity_depots(entity_id, depot_id) VALUES
 (1,1) , (1,2);
 
-INSERT INTO utilisateurs (nom,email,mot_de_passe,role_id,entity_id) VALUES
-('ADMIN' , 'admin@gmail.com' , 'admin' , 1 ,1 );
-
 
 
