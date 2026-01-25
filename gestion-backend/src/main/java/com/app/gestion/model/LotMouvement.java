@@ -19,6 +19,7 @@ public class LotMouvement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lot_id", nullable = false)
+    @lombok.ToString.Exclude
     private Lot lot;
 
     @Column(name = "quantite", nullable = false)
@@ -26,10 +27,12 @@ public class LotMouvement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type_mouvement_id", nullable = false)
+    @lombok.ToString.Exclude
     private StockTypeMouvement typeMouvement;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "raison_id", nullable = false)
+    @lombok.ToString.Exclude
     private RaisonMouvement raison;
 
     @Column(name = "chemin_document", length = 200)

@@ -4,6 +4,7 @@ import com.app.gestion.model.Lot;
 
 import jakarta.persistence.criteria.CriteriaBuilder.In;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,15 +25,15 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
         SELECT *
         FROM (
             SELECT l.*,
-                SUM(l.quantite) OVER (ORDER BY l.date_peremption ASC) AS cumul
-            FROM lot l
+                SUM(l.quantite) OVER (ORDER BY l.date_arrivee ASC) AS cumul
+            FROM lots l
             WHERE l.article_id = :articleId
             AND l.depot_id = :depotId
             AND l.quantite > 0
         ) t
-        WHERE t.cumul <= :quantite
-        OR t.cumul - t.quantite < :quantite
-        ORDER BY t.date_peremption ASC
+            WHERE t.cumul <= :quantite
+            OR t.cumul - t.quantite < :quantite
+            ORDER BY t.date_arrivee ASC
     """, nativeQuery = true)
     List<Lot> findFIFO(
         @Param("articleId") Integer articleId,
@@ -44,15 +45,15 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
         SELECT *
         FROM (
             SELECT l.*,
-                SUM(l.quantite) OVER (ORDER BY l.date_peremption ASC) AS cumul
-            FROM lot l
+                SUM(l.quantite) OVER (ORDER BY l.date_arrivee ASC) AS cumul
+            FROM lots l
             WHERE l.article_id = :articleId
             AND l.depot_id = :depotId
             AND l.quantite > 0
         ) t
         WHERE t.cumul <= :quantite
         OR t.cumul - t.quantite < :quantite
-        ORDER BY t.date_peremption DESC
+            ORDER BY t.date_arrivee DESC
     """, nativeQuery = true)
     List<Lot> findLIFO(
         @Param("articleId") Integer articleId,
@@ -66,7 +67,7 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
         FROM (
             SELECT l.*,
                 SUM(l.quantite) OVER () AS cumul
-            FROM lot l
+            FROM lots l
             WHERE l.article_id = :articleId
             AND l.depot_id = :depotId
             AND l.quantite > 0
@@ -78,5 +79,29 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
         @Param("articleId") Integer articleId,
         @Param("depotId") Integer depotId,
         @Param("quantite") Double quantite
+    );
+
+    // Fallback Spring Data methods (used when DB window functions are not available)
+    List<Lot> findByArticleIdAndDepotIdAndQuantiteGreaterThanOrderByDateArriveeAsc(Integer articleId, Integer depotId, Double quantite);
+    List<Lot> findByArticleIdAndDepotIdAndQuantiteGreaterThanOrderByDateArriveeDesc(Integer articleId, Integer depotId, Double quantite);
+
+    List<Lot> findByArticleIdAndQuantiteGreaterThanOrderByDateArriveeAsc(Integer articleId, Double quantite);
+    List<Lot> findByArticleIdAndQuantiteGreaterThanOrderByDateArriveeDesc(Integer articleId, Double quantite);
+
+    // Methods with arrival-date cutoff
+    List<Lot> findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(
+        Integer articleId, Integer depotId, Double quantite, LocalDateTime dateArrivee
+    );
+
+    List<Lot> findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(
+        Integer articleId, Integer depotId, Double quantite, LocalDateTime dateArrivee
+    );
+
+    List<Lot> findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(
+        Integer articleId, Double quantite, LocalDateTime dateArrivee
+    );
+
+    List<Lot> findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(
+        Integer articleId, Double quantite, LocalDateTime dateArrivee
     );
 }

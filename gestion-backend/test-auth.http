@@ -31,6 +31,13 @@ Content-Type: {{contentType}}
     "roleId":12
 }
 
+{
+    "nom": "Magasinier Inventaire",
+    "email": "maginv@gmail.com",
+    "motDePasse": "maginv",
+    "entityId": 1,
+    "roleId":13
+}
 
 {
     "nom": "Responsable Magasinier",

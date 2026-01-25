@@ -21,14 +21,18 @@ public class Depot {
     private String depotName;
 
     @OneToMany(mappedBy = "depot", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<EntityDepot> entityDepots;
 
     @OneToMany(mappedBy = "depot", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Lot> lots;
 
     @OneToMany(mappedBy = "depot", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ReceptionAchatLigne> receptionAchatLignes;
 
     @OneToMany(mappedBy = "depot", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Inventaire> inventaires;
 }

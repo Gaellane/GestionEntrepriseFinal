@@ -24,5 +24,6 @@ public class StockTypeMouvement {
     private String description;
 
     @OneToMany(mappedBy = "typeMouvement", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<LotMouvement> lotMouvements;
 }

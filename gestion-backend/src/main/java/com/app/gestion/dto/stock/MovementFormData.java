@@ -14,4 +14,5 @@ import lombok.NoArgsConstructor;
 public class MovementFormData {
     private List<ArticleDTO> articles;
     private List<DepotDTO> depots;
+    private List<RaisonMouvementDTO> raisons;
 }

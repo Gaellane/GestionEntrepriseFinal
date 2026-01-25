@@ -27,11 +27,14 @@ public class VenteProcess {
     private Integer valeur;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ProformaVente> proformaVentes;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Vente> ventes;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<VenteHistorique> venteHistoriques;
 }

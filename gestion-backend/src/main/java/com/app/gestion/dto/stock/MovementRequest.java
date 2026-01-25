@@ -18,6 +18,7 @@ public class MovementRequest {
     private Integer articleId;
     private Integer depotId; // required for ENTREE
     private Double quantite;
+    private Double prixUnitaire;
     private Integer raisonId;
     private String description;
     private LocalDateTime date;

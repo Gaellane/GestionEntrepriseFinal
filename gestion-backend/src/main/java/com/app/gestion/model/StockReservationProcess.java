@@ -27,8 +27,10 @@ public class StockReservationProcess {
     private Integer valeur;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<StockReservation> stockReservations;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<StockReservationHistorique> stockReservationHistoriques;
 }

@@ -1,5 +1,6 @@
 package com.app.gestion.model;
 
+import com.app.gestion.model.enums.StatutLot;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,10 +24,12 @@ public class Lot {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private Article article;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "depot_id", nullable = false)
+    @lombok.ToString.Exclude
     private Depot depot;
 
     @Column(name = "date_arrivee", nullable = false)
@@ -44,6 +47,17 @@ public class Lot {
     @Column(name = "prix_unitaire", nullable = false)
     private Double prixUnitaire;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut_lot", length = 20)
+    private StatutLot statutLot = StatutLot.ACTIF;
+
+    @Column(name = "raison_blocage", columnDefinition = "TEXT")
+    private String raisonBlocage;
+
+    @Column(name = "date_blocage")
+    private LocalDateTime dateBlocage;
+
     @OneToMany(mappedBy = "lot", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<LotMouvement> lotMouvements;
 }

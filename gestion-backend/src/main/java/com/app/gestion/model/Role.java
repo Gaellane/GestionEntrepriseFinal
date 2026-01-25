@@ -28,8 +28,10 @@ public class Role {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id", nullable = false)
+    @lombok.ToString.Exclude
     private Department department;
 
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Utilisateur> utilisateurs;
 }

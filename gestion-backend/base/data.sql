@@ -99,6 +99,16 @@ INSERT INTO categories (categorie_name, description) VALUES
 ('Soin du Corps', 'Produits de soin et hygiène corporelle'),
 ('Maquillage', 'Produits de maquillage professionnels');
 
+-- Mettre à jour les seuils de péremption par catégorie (DLUO = alerte en jours, DLC = blocage en jours)
+UPDATE categories SET dluo = NULL, dlc = NULL WHERE categorie_name = 'Vêtements';
+UPDATE categories SET dluo = 3650, dlc = NULL WHERE categorie_name = 'Parfums';
+UPDATE categories SET dluo = 365, dlc = 180 WHERE categorie_name = 'Cosmétiques';
+UPDATE categories SET dluo = NULL, dlc = NULL WHERE categorie_name = 'Accessoires';
+UPDATE categories SET dluo = NULL, dlc = NULL WHERE categorie_name = 'Chaussures';
+UPDATE categories SET dluo = 365, dlc = NULL WHERE categorie_name = 'Lingerie';
+UPDATE categories SET dluo = 365, dlc = 180 WHERE categorie_name = 'Soin du Corps';
+UPDATE categories SET dluo = 365, dlc = 180 WHERE categorie_name = 'Maquillage';
+
 -- Articles (références et valorisation)
 INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id, unite_id) VALUES
 ('VET-0001', 'Jean Slim Homme', 'FIFO', 'Jean slim coupe moderne', (SELECT id FROM categories WHERE categorie_name='Vêtements'), (SELECT id FROM unites WHERE unite_name='Piece')),
@@ -152,3 +162,35 @@ VALUES
 
 -- END familles/articles
 
+-- ==================================================================
+-- Raison de mouvements (catégorisées : ENTREE / SORTIE)
+-- ==================================================================
+INSERT INTO raison_mouvements (raison_name, description) VALUES
+('réception fournisseur', 'ENTREE'),
+('retour client', 'ENTREE'),
+('ajustement positif', 'ENTREE'),
+('transfert entrant', 'ENTREE'),
+('livraison client', 'SORTIE'),
+('consommation interne', 'SORTIE'),
+('rebut', 'SORTIE'),
+('ajustement négatif', 'SORTIE'),
+('transfert sortant', 'SORTIE');
+
+-- Types de mouvement (ENTREE=1, SORTIE=2)
+INSERT INTO stock_type_mouvements (id, type_name, description) VALUES
+(1, 'ENTREE', 'Mouvement entrée en stock'),
+(2, 'SORTIE', 'Mouvement sortie de stock');
+
+
+-- Inventaire demande process (processus pour les demandes d'inventaire)
+INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
+('Création de la demande', 'CRE', 1),
+('Validation demande', 'VAL', 2),
+('Rejet demande', 'REJ', 3),
+('Clôture demande', 'CLO', 4),
+('Annulation demande', 'ANN', 5);
+
+
+
+INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
+('MAGINV','MAGASINIER INVENTAIRE', 9, 5);

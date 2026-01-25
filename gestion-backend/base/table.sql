@@ -414,11 +414,36 @@ CREATE TABLE inventaire_lignes (
     quantite DECIMAL(15,2) NOT NULL
 );
 
+
+CREATE TABLE inventaire_process (
+    id SERIAL PRIMARY KEY,
+    process_name VARCHAR(100) NOT NULL,
+    abreviation VARCHAR(10) NOT NULL,
+    valeur INTEGER NOT NULL
+);
+
+-- Seed processes for inventories
+INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
+('Création de l''inventaire', 'CRE', 1),
+('Validation inventaire', 'VAL', 2),
+('Rejet inventaire', 'REJ', 3),
+('Clôture inventaire', 'CLO', 4),
+('Annulation inventaire', 'ANN', 5);
+
+CREATE TABLE inventaire_historiques (
+    id SERIAL PRIMARY KEY,
+    date_entree TIMESTAMP NOT NULL,
+    inventaire_id INTEGER NOT NULL REFERENCES inventaires(id),
+    process_id INTEGER NOT NULL REFERENCES inventaire_process(id),
+    utilisateur_id INTEGER NOT NULL REFERENCES utilisateurs(id)
+);
 CREATE TABLE caisse_type_mouvements (
     id SERIAL PRIMARY KEY,
     type_name VARCHAR(100) NOT NULL,
     valeur INTEGER NOT NULL
 );
+
+
 
 CREATE TABLE caisse_mouvements (
     id SERIAL PRIMARY KEY,
@@ -438,3 +463,27 @@ CREATE TABLE roles_attribution_historiques(
     date_entree TIMESTAMP NOT NULL
 );
 
+CREATE SEQUENCE lot_num_seq
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+CACHE 1;
+
+
+-- Modifications 2026-01-25: Ajout gestion DLUO/DLC et blocage automatique des lots
+
+-- Ajout des paramètres DLUO/DLC dans la table categories
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS dluo INTEGER;
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS dlc INTEGER;
+
+COMMENT ON COLUMN categories.dluo IS 'Date Limite d''Utilisation Optimale en jours';
+COMMENT ON COLUMN categories.dlc IS 'Date Limite de Consommation en jours';
+
+-- Ajout du statut et des informations de blocage dans la table lots
+ALTER TABLE lots ADD COLUMN IF NOT EXISTS statut_lot VARCHAR(20) DEFAULT 'ACTIF';
+ALTER TABLE lots ADD COLUMN IF NOT EXISTS raison_blocage TEXT;
+ALTER TABLE lots ADD COLUMN IF NOT EXISTS date_blocage TIMESTAMP;
+
+COMMENT ON COLUMN lots.statut_lot IS 'Statut du lot: ACTIF, BLOQUE, EXPIRE_DLC, EXPIRE_DLUO';
+COMMENT ON COLUMN lots.raison_blocage IS 'Raison du blocage du lot';
+COMMENT ON COLUMN lots.date_blocage IS 'Date du blocage du lot';

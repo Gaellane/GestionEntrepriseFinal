@@ -24,5 +24,6 @@ public class Unite {
     private String abreviation;
 
     @OneToMany(mappedBy = "unite", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Article> articles;
 }

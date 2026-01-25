@@ -20,6 +20,7 @@ public class Inventaire {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id", nullable = false)
+    @lombok.ToString.Exclude
     private Utilisateur utilisateur;
 
     @Column(name = "date_entree", nullable = false)
@@ -27,11 +28,13 @@ public class Inventaire {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "depot_id", nullable = false)
+    @lombok.ToString.Exclude
     private Depot depot;
 
     @Column(name = "details", columnDefinition = "TEXT")
     private String details;
 
     @OneToMany(mappedBy = "inventaire", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<InventaireLigne> inventaireLignes;
 }

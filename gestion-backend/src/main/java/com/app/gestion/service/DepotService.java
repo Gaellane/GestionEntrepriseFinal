@@ -54,6 +54,11 @@ public class DepotService {
                 .collect(Collectors.toList());
     }
 
+    // Backwards-compatible overload: allow callers to request depots by movement type
+    public List<DepotDTO> getAllForCurrentUser(int type) throws Exception {
+        return getDepotsForMovement(type);
+    }
+
     /**
      * Retourne les dépôts en fonction du type de mouvement :
      * type == 1 -> dépôts de l'entité de l'utilisateur (entrée)

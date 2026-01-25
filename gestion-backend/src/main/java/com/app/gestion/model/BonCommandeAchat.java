@@ -20,6 +20,7 @@ public class BonCommandeAchat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "proforma_id", nullable = false)
+    @lombok.ToString.Exclude
     private ProformaAchat proforma;
 
     @Column(name = "date_entree", nullable = false)
@@ -30,20 +31,25 @@ public class BonCommandeAchat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "process_id", nullable = false)
+    @lombok.ToString.Exclude
     private BonCommandeProcess process;
 
     @Column(name = "refe", nullable = false, length = 100)
     private String refe;
 
     @OneToMany(mappedBy = "bonCommande", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<BonCommandeAchatLigne> bonCommandeAchatLignes;
 
     @OneToMany(mappedBy = "bonCommande", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<BonCommandeHistorique> bonCommandeHistoriques;
 
     @OneToMany(mappedBy = "bonCommande", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ReceptionAchat> receptionAchats;
 
     @OneToMany(mappedBy = "bonCommande", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<LivraisonAchat> livraisonAchats;
 }

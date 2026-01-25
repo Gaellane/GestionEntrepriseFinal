@@ -15,4 +15,15 @@ public class ArticleDTO {
     private String articleNom;
     private String valorisation;
     private String description;
+
+    public static ArticleDTO mapToDTO(com.app.gestion.model.Article art) {
+        if (art == null) return null;
+        return ArticleDTO.builder()
+                .id(art.getId())
+                .refe(art.getRefe())
+                .articleNom(art.getArticleNom())
+                .valorisation(art.getValorisation())
+                .description(art.getDescription())
+                .build();
+    }
 }
