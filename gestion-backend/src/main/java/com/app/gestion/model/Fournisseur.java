@@ -30,5 +30,6 @@ public class Fournisseur {
     private String coordonneeBancaire;
 
     @OneToMany(mappedBy = "fournisseur", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ProformaAchat> proformaAchats;
 }

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InventaireRepository extends JpaRepository<Inventaire, Integer> {
+	java.util.List<Inventaire> findByUtilisateur_Id(Integer utilisateurId);
 }

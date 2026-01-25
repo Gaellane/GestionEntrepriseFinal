@@ -19,10 +19,12 @@ public class AuditLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id")
+    @lombok.ToString.Exclude
     private Utilisateur utilisateur;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "action_id")
+    @lombok.ToString.Exclude
     private Action action;
 
     @Column(name = "classes", length = 100)

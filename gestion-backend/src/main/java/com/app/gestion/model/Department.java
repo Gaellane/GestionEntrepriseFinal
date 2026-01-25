@@ -20,5 +20,6 @@ public class Department {
     private String departmentName;
 
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Role> roles;
 }

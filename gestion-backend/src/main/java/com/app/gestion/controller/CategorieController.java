@@ -1,55 +1,45 @@
 package com.app.gestion.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import com.app.gestion.dto.ApiResponse;
+import com.app.gestion.dto.CategorieDTO;
+import com.app.gestion.repository.CategorieRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.DeleteMapping;
-
-import com.app.gestion.service.CategorieService;
-import com.app.gestion.model.Categorie;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/categories")
 public class CategorieController {
-    
-    @Autowired
-    private CategorieService categorieService;
+
+
+    private final CategorieRepository categorieRepository;
+
+    public CategorieController(CategorieRepository categorieRepository) {
+        this.categorieRepository = categorieRepository;
+    }
 
     @GetMapping
-    public ResponseEntity<List<Categorie>> getAllCategories() {
-        List<Categorie> categories = categorieService.getAllCategories();
-        return ResponseEntity.ok(categories);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Categorie> getCategorieById(@PathVariable Integer id) throws Exception {
-        Categorie categorie = categorieService.getCategorieById(id);
-        return ResponseEntity.ok(categorie);
-    }
-
-    @PostMapping
-    public ResponseEntity<Categorie> createCategorie(@RequestBody Categorie categorie) {
-        Categorie createdCategorie = categorieService.createCategorie(categorie);
-        return ResponseEntity.ok(createdCategorie);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Categorie> updateCategorie(@PathVariable Integer id, @RequestBody Categorie categorieDetails) throws Exception {
-        Categorie updatedCategorie = categorieService.updateCategorie(id, categorieDetails);
-        return ResponseEntity.ok(updatedCategorie);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategorie(@PathVariable Integer id) throws Exception {
-        categorieService.deleteCategorie(id);
-        return ResponseEntity.noContent().build();
+    @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN','MAGINV')")
+    public ApiResponse<List<CategorieDTO>> getAllCategories() {
+        try {
+            System.out.println("[CategorieController] Loading all categories...");
+            List<CategorieDTO> categories = categorieRepository.findAll().stream()
+                    .map(cat -> CategorieDTO.builder()
+                            .id(cat.getId())
+                            .categorieName(cat.getCategorieName())
+                            .description(cat.getDescription())
+                            .build())
+                    .collect(Collectors.toList());
+            System.out.println("[CategorieController] Found " + categories.size() + " categories");
+            return new ApiResponse<>(true, "OK", categories);
+        } catch (Exception e) {
+            System.err.println("[CategorieController] Error: " + e.getMessage());
+            e.printStackTrace();
+            return new ApiResponse<>(false, "Erreur lors de la récupération des catégories: " + e.getMessage(), null);
+        }
     }
 }

@@ -20,6 +20,7 @@ public class ReceptionAchat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bon_commande_id", nullable = false)
+    @lombok.ToString.Exclude
     private BonCommandeAchat bonCommande;
 
     @Column(name = "date_entree", nullable = false)
@@ -29,5 +30,6 @@ public class ReceptionAchat {
     private String refe;
 
     @OneToMany(mappedBy = "reception", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ReceptionAchatLigne> receptionAchatLignes;
 }

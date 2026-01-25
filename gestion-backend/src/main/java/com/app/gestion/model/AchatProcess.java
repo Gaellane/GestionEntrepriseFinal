@@ -27,8 +27,10 @@ public class AchatProcess {
     private Integer valeur;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Achat> achats;
 
     @OneToMany(mappedBy = "process", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<AchatHistorique> achatHistoriques;
 }
