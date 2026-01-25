@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.app.gestion.dto.AuditLogDto;
+
 @jakarta.persistence.Entity
 @Table(name = "audit_logs")
 @Data
@@ -44,4 +46,18 @@ public class AuditLog {
 
     @Column(name = "details", columnDefinition = "TEXT")
     private String details;
+
+    public AuditLogDto convertToDto() {
+        return AuditLogDto.builder()
+                .id(this.getId())
+                .userId(this.getUtilisateur() != null ? this.getUtilisateur().getId() : null)
+                .actionLabel(this.getAction() != null ? this.getAction().getActionName() : null)
+                .classes(this.getClasses())
+                .idsClasses(this.getIdsClasses())
+                .actionTimestamp(this.getActionTimestamp())
+                .oldValues(this.getOldValues())
+                .newValues(this.getNewValues())
+                .details(this.getDetails())
+                .build();
+    }
 }
