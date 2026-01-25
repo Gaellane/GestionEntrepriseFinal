@@ -26,6 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             Utilisateur utilisateur = utilisateurService.findByEmail(email);
             
             System.out.println("This user has the password:"+utilisateur.getMotDePasse());
+            System.out.println("User role: " + utilisateur.getRole().getRoleCode());
             
             return new org.springframework.security.core.userdetails.User(
             utilisateur.getEmail(),

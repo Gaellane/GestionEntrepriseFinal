@@ -42,7 +42,9 @@ public class UtilisateurService {
 
     public Utilisateur findByEmail(String email) throws Exception
     {
-        return utilisateurRepository.findByEmail(email).orElseThrow(()-> new Exception("Utilisateur avec l'email :"+email+" introuvable"));
+        // Utilisation de la requête avec FETCH JOIN pour éviter LazyInitializationException
+        return utilisateurRepository.findByEmailWithRole(email)
+            .orElseThrow(()-> new Exception("Utilisateur avec l'email :"+email+" introuvable"));
     } 
 
     @Transactional

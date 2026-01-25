@@ -22,9 +22,11 @@ public class VenteHistorique {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vente_id", nullable = false)
+    @lombok.ToString.Exclude
     private Vente vente;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "process_id", nullable = false)
+    @lombok.ToString.Exclude
     private VenteProcess process;
 }

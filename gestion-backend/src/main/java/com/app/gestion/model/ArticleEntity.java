@@ -19,12 +19,15 @@ public class ArticleEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
+    @lombok.ToString.Exclude
     private Entity entity;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private Article article;
 
     @OneToMany(mappedBy = "articleEntity", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ArticlePrix> articlePrix;
 }

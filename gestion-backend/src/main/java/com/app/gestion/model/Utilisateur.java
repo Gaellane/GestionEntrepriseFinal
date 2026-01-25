@@ -28,18 +28,23 @@ public class Utilisateur {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @lombok.ToString.Exclude
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
+    @lombok.ToString.Exclude
     private Entity entity;
 
     @OneToMany(mappedBy = "utilisateur", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<AuditLog> auditLogs;
 
     @OneToMany(mappedBy = "demandeur", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Achat> achats;
 
     @OneToMany(mappedBy = "utilisateur", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Inventaire> inventaires;
 }

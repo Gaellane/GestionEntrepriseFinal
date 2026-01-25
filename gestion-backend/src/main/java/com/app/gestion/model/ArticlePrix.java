@@ -19,6 +19,7 @@ public class ArticlePrix {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private ArticleEntity articleEntity;
 
     @Column(name = "prix", nullable = false)

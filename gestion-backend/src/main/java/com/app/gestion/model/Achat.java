@@ -24,6 +24,7 @@ public class Achat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "demandeur", nullable = false)
+    @lombok.ToString.Exclude
     private Utilisateur demandeur;
 
     @Column(name = "date_effective", nullable = false)
@@ -31,17 +32,21 @@ public class Achat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "process_id", nullable = false)
+    @lombok.ToString.Exclude
     private AchatProcess process;
 
     @Column(name = "refe", unique = true, nullable = false, length = 100)
     private String refe;
 
     @OneToMany(mappedBy = "achat", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<AchatLigne> achatLignes;
 
     @OneToMany(mappedBy = "achat", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<AchatHistorique> achatHistoriques;
 
     @OneToMany(mappedBy = "achat", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<ProformaAchat> proformaAchats;
 }

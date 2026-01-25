@@ -23,11 +23,13 @@ public class LivraisonAchat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bon_commande_id", nullable = false)
+    @lombok.ToString.Exclude
     private BonCommandeAchat bonCommande;
 
     @Column(name = "refe", unique = true, nullable = false, length = 100)
     private String refe;
 
     @OneToMany(mappedBy = "livraison", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<LivraisonAchatLigne> livraisonAchatLignes;
 }
