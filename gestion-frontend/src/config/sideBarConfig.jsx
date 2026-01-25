@@ -15,6 +15,8 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   HomeIcon,
+  DocumentDuplicateIcon,
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CONFIG = {
@@ -215,6 +217,21 @@ export const SIDEBAR_CONFIG = {
           path: '/stock/inventaires',
           roles: [ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
           icon: <ListBulletIcon className="w-4 h-4" />
+        }
+      ]
+    },
+    {
+      id: 'administration',
+      label: 'Administration',
+      icon: <AdjustmentsHorizontalIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN],
+      subItems: [
+        {
+          id: 'audit-logs',
+          label: 'Logs d\'audit',
+          path: '/admin/audit-logs',
+          icon: <DocumentDuplicateIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN],
         }
       ]
     }, 

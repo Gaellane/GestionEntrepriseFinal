@@ -13,6 +13,7 @@ import InventairePerform from "../pages/inventaire/InventairePerform";
 import DashboardRespMagasin from "../pages/stock/DashboardRespMagasin";
 import AjustementStock from "../pages/stock/AjustementStock";
 import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
+import AuditLogs from "../pages/admin/AuditLogs";
 
 
 const AppRoutes = () => {
@@ -41,6 +42,7 @@ const AppRoutes = () => {
             <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
             <Route path="/stock/ajustements" element={<AjustementStock/>} />
             <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
+            <Route path="/admin/audit-logs" element={<AuditLogs/>} />
 
         
           
