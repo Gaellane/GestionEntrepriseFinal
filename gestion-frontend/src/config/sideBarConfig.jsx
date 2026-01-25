@@ -31,6 +31,21 @@ export const SIDEBAR_CONFIG = {
           path: '/home',
           icon: <DocumentTextIcon className="w-4 h-4" />,
           alwaysVisible: true,
+        } ,
+      ]
+    },
+    {
+      id: 'articles',
+      label: 'Articles',
+      icon: <CubeIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
+      subItems: [
+        {
+          id: 'liste-articles',
+          label: 'Liste',
+          path: '/articles',
+          icon: <DocumentTextIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
         }
       ]
     },
@@ -69,6 +84,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Vente',
       icon: <ChartBarIcon className="w-5 h-5" />,
       permission: 'view_sales',
+      alwaysVisible : true,
       subItems: [
         {
           id: 'proforma-vente',
@@ -98,6 +114,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Livraison',
       icon: <TruckIcon className="w-5 h-5" />,
       permission: 'view_deliveries',
+
       subItems: [
         {
           id: 'liste-livraisons',
@@ -141,7 +158,7 @@ export const SIDEBAR_CONFIG = {
 };
 
 
-export const canAccessRoute = (routePath, user) => {
+export const canAccessRoute = async ({routePath, user}) => {
   if (!user || !user.role) return false;
   
   // Trouver la route dans la configuration

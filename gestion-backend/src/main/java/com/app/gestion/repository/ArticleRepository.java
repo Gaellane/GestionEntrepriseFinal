@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ArticleRepository extends JpaRepository<Article, Integer> {
     Optional<Article> findByRefe(String refe);
+    Boolean existsByRefe(String refe);
 }

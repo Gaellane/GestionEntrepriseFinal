@@ -14,11 +14,18 @@ const ProtectedRoute = ({ children }) => {
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+/// adino le '/' fa lasa unhaurized fona
+  if(location.pathname === "/"){
+    return <Navigate to="/home" state={{ from: location }} replace />;
+  }
   
   // 2. Vérifier si la route actuelle est accessible
   const currentPath = location.pathname;
-  const hasAccess = canAccessRoute(currentPath, user);
-  
+  const hasAccess = canAccessRoute({currentPath, user});
+
+  console.log("hasAccess: ",hasAccess);
+  console.log("user: ",user);
+
   if (!hasAccess) {
     // Rediriger vers une page d'erreur ou le dashboard
     return <Navigate to="/unauthorized" state={{ from: location }} replace />;
