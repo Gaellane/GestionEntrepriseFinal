@@ -224,14 +224,28 @@ export const SIDEBAR_CONFIG = {
       id: 'administration',
       label: 'Administration',
       icon: <AdjustmentsHorizontalIcon className="w-5 h-5" />,
-      roles: [ROLES.ADMIN],
+      roles: [ROLES.ADMIN,ROLES.ADMINSYS],
       subItems: [
         {
           id: 'audit-logs',
           label: 'Logs d\'audit',
           path: '/admin/audit-logs',
           icon: <DocumentDuplicateIcon className="w-4 h-4" />,
-          roles: [ROLES.ADMIN],
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-attribution',
+          label: 'Gestion de roles',
+          path: '/admin/roles-attribution',
+          icon: <DocumentDuplicateIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-validation',
+          label: 'Validation roles',
+          path: '/admin/roles-validation',
+          icon: <DocumentDuplicateIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
         }
       ]
     }, 
