@@ -1,10 +1,13 @@
 package com.app.gestion.service;
 
 import com.app.gestion.dto.RolesAttributionHistoriqueDto;
+import com.app.gestion.model.AuditLog;
 import com.app.gestion.model.Role;
 import com.app.gestion.model.RolesAttributionHistorique;
 import com.app.gestion.model.RolesAttributionProcess;
 import com.app.gestion.model.Utilisateur;
+import com.app.gestion.repository.ActionRepository;
+import com.app.gestion.repository.AuditLogRepository;
 import com.app.gestion.repository.RoleRepository;
 import com.app.gestion.repository.RolesAttributionHistoriqueRepository;
 import com.app.gestion.repository.RolesAttributionProcessRepository;
@@ -25,9 +28,11 @@ public class RolesAttributionService {
     private final RolesAttributionProcessRepository rolesAttributionProcessRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final RoleRepository roleRepository;
+    private final AuditLogRepository auditLogRepository;        
+    private final ActionRepository actionRepository;
 
     @Transactional
-    public RolesAttributionHistoriqueDto assignRole(Integer utilisateurId, Integer roleId) throws Exception {
+    public RolesAttributionHistoriqueDto assignRole(Integer utilisateurId, Integer roleId, Integer userId) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
         
@@ -45,11 +50,23 @@ public class RolesAttributionService {
                 .build();
 
         RolesAttributionHistorique saved = rolesAttributionHistoriqueRepository.save(historique);
+        
+        Utilisateur user = utilisateurRepository.findById(userId).orElseThrow(() -> new Exception("Utilisateur responsable de l'action introuvable"));
+
+        AuditLog auditLog = AuditLog.builder()
+                .utilisateur(user)
+                .action(actionRepository.findById(1).orElseThrow(() -> new IllegalArgumentException("Action non trouvée")))
+                .classes("RoleAttributionHistorique")
+                .idsClasses(saved.getId().toString())
+                .newValues(saved.toString())
+                .build();
+        auditLogRepository.save(auditLog);
+        
         return convertToDto(saved);
     }
 
     @Transactional
-    public RolesAttributionHistoriqueDto validateRoleAttribution(Integer historiqueId) throws Exception {
+    public RolesAttributionHistoriqueDto validateRoleAttribution(Integer historiqueId, Integer userId) throws Exception {
         RolesAttributionHistorique historique = rolesAttributionHistoriqueRepository.findById(historiqueId)
                 .orElseThrow(() -> new Exception("Attribution de rôle introuvable"));
 
@@ -65,11 +82,23 @@ public class RolesAttributionService {
         utilisateurRepository.save(utilisateur);
 
         RolesAttributionHistorique updated = rolesAttributionHistoriqueRepository.save(historique);
+        
+        Utilisateur user = utilisateurRepository.findById(userId).orElseThrow(() -> new Exception("Utilisateur responsable de l'action introuvable"));
+
+        AuditLog auditLog = AuditLog.builder()
+                .utilisateur(user)
+                .action(actionRepository.findById(5).orElseThrow(() -> new IllegalArgumentException("Action non trouvée")))
+                .classes("RoleAttributionHistorique")
+                .idsClasses(updated.getId().toString())
+                .newValues(updated.toString())
+                .build();
+        auditLogRepository.save(auditLog);
+        
         return convertToDto(updated);
     }
 
     @Transactional
-    public RolesAttributionHistoriqueDto rejectRoleAttribution(Integer historiqueId) throws Exception {
+    public RolesAttributionHistoriqueDto rejectRoleAttribution(Integer historiqueId, Integer userId) throws Exception {
         RolesAttributionHistorique historique = rolesAttributionHistoriqueRepository.findById(historiqueId)
                 .orElseThrow(() -> new Exception("Attribution de rôle introuvable"));
 
@@ -78,6 +107,18 @@ public class RolesAttributionService {
 
         historique.setProcess(rejectProcess);
         RolesAttributionHistorique updated = rolesAttributionHistoriqueRepository.save(historique);
+
+        Utilisateur user = utilisateurRepository.findById(userId).orElseThrow(() -> new Exception("Utilisateur responsable de l'action introuvable"));
+
+        AuditLog auditLog = AuditLog.builder()
+                .utilisateur(user)
+                .action(actionRepository.findById(6).orElseThrow(() -> new IllegalArgumentException("Action non trouvée")))
+                .classes("RoleAttributionHistorique")
+                .idsClasses(updated.getId().toString())
+                .newValues(updated.toString())
+                .build();
+        auditLogRepository.save(auditLog);
+
         return convertToDto(updated);
     }
 
