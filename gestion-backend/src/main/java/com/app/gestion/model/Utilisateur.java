@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.util.List;
 
+import com.app.gestion.dto.UtilisateurDto;
+
 @jakarta.persistence.Entity
 @Table(name = "utilisateurs")
 @Data
@@ -47,4 +49,17 @@ public class Utilisateur {
     @OneToMany(mappedBy = "utilisateur", fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
     private List<Inventaire> inventaires;
+
+
+    public UtilisateurDto convertToDto()
+    {
+        UtilisateurDto u = new UtilisateurDto();
+        u.setId(id);
+        u.setEmail(email);
+        u.setNom(nom);
+        u.setRoleId(role.getId());
+        u.setRoleName(role.getRoleName());
+
+        return u;
+    }
 }
