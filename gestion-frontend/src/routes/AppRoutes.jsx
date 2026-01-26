@@ -14,6 +14,8 @@ import DashboardRespMagasin from "../pages/stock/DashboardRespMagasin";
 import AjustementStock from "../pages/stock/AjustementStock";
 import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
 import AuditLogs from "../pages/admin/AuditLogs";
+import RolesAssignment from "../pages/admin/RolesAssignment";
+import RolesValidation from "../pages/admin/RolesValidation";
 
 
 const AppRoutes = () => {
@@ -43,6 +45,8 @@ const AppRoutes = () => {
             <Route path="/stock/ajustements" element={<AjustementStock/>} />
             <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
             <Route path="/admin/audit-logs" element={<AuditLogs/>} />
+            <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
+            <Route path="/admin/roles-validation" element={<RolesValidation/>} />
 
         
           
