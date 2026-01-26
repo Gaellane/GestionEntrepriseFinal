@@ -15,6 +15,7 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   HomeIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CONFIG = {
@@ -56,11 +57,12 @@ export const SIDEBAR_CONFIG = {
       roles: [ROLES.ADMIN],
       subItems: [
         {
-          id: 'proforma-achats',
-          label: 'Proforma',
-          path: '/achats/proforma',
-          icon: <DocumentTextIcon className="w-4 h-4" />,
+          id: 'saisie-achat',
+          label: 'Saisie',
+          path: '/achats/saisie',
+          icon: <PlusIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+
         },
         {
           id: 'demandes-achats',
@@ -69,6 +71,13 @@ export const SIDEBAR_CONFIG = {
           icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
 
+        },
+        {
+          id: 'proforma-achats',
+          label: 'Proforma',
+          path: '/achats/proforma',
+          icon: <DocumentTextIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN],
         },
         {
           id: 'fournisseurs',

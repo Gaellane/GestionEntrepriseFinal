@@ -13,7 +13,8 @@ import InventairePerform from "../pages/inventaire/InventairePerform";
 import DashboardRespMagasin from "../pages/stock/DashboardRespMagasin";
 import AjustementStock from "../pages/stock/AjustementStock";
 import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
-
+import AchatSaisie from "../pages/achat/AchatSaisie";
+import AchatList from "../pages/achat/AchatList";
 
 
 //achat , articele 
@@ -40,6 +41,10 @@ const AppRoutes = () => {
 
             <Route path="/articles">
               <Route index element={<ListeArticle />} />
+            </Route>
+            <Route path="/achats">
+              <Route path="saisie" element={<AchatSaisie />} />
+              <Route path="demandes" element={<AchatList />} />
             </Route>
 
             <Route path="/stock/inventaires" element={<DemandeInventaires/>} />

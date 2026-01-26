@@ -2,11 +2,14 @@ package com.app.gestion.controller;
 
 import com.app.gestion.dto.ApiResponse;
 import com.app.gestion.dto.CategorieDTO;
+import com.app.gestion.service.CategorieService;
 import com.app.gestion.repository.CategorieRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,19 +18,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/categories")
 public class CategorieController {
 
-
-    private final CategorieRepository categorieRepository;
-
-    public CategorieController(CategorieRepository categorieRepository) {
-        this.categorieRepository = categorieRepository;
-    }
+    @Autowired
+    private CategorieService categorieService;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN','MAGINV')")
     public ApiResponse<List<CategorieDTO>> getAllCategories() {
         try {
             System.out.println("[CategorieController] Loading all categories...");
-            List<CategorieDTO> categories = categorieRepository.findAll().stream()
+            List<CategorieDTO> categories = categorieService.getAllCategories().stream()
                     .map(cat -> CategorieDTO.builder()
                             .id(cat.getId())
                             .categorieName(cat.getCategorieName())

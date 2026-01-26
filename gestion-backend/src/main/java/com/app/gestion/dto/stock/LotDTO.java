@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import com.app.gestion.model.Lot;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,7 +25,7 @@ public class LotDTO {
     private Double prixUnitaire;
     private String alerte; // "DLUO", "DLC" or "DLUO,DLC"
 
-    public static LotDTO mapToDTO(com.app.gestion.model.Lot lot) {
+    public static LotDTO mapToDTO(Lot lot) {
         if (lot == null) return null;
         ArticleDTO a = ArticleDTO.mapToDTO(lot.getArticle());
         DepotDTO d = DepotDTO.mapToDTO(lot.getDepot());

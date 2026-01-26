@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.app.gestion.model.Article;
 
 @Data
 @NoArgsConstructor
@@ -16,14 +17,14 @@ public class ArticleDTO {
     private String valorisation;
     private String description;
 
-    public static ArticleDTO mapToDTO(com.app.gestion.model.Article art) {
+    public static ArticleDTO mapToDTO(Article art) {
         if (art == null) return null;
-        return ArticleDTO.builder()
-                .id(art.getId())
-                .refe(art.getRefe())
-                .articleNom(art.getArticleNom())
-                .valorisation(art.getValorisation())
-                .description(art.getDescription())
-                .build();
+        return new ArticleDTO(
+                art.getId(),
+                art.getRefe(),
+                art.getArticleNom(),
+                art.getValorisation(),
+                art.getDescription()
+        );
     }
 }
