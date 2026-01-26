@@ -5,6 +5,7 @@ export const AuthContext = createContext();
 
 export const ROLES = {
   ADMIN: 'ADMIN',
+  ADMINSYS: 'ADMINSYS',
   USER: 'USER',
   EDITOR: 'EDITOR',
   GUEST: 'GUEST',
