@@ -3,6 +3,7 @@ import { ChevronLeftIcon, ChevronRightIcon, DocumentDuplicateIcon } from '@heroi
 import SideBar from '../../components/layout/SideBar';
 import auditLogApi from '../../api/auditLogApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ExportToExcelButton from '../../components/common/button/ExportToExcelButton';
 
 const formatDate = (dateString) => {
   if (!dateString) return '-';
@@ -137,6 +138,7 @@ export default function AuditLogs() {
                   Total : <span className="font-semibold">{pagination.totalElements}</span> logs
                 </p>
               </div>
+              <ExportToExcelButton data={auditLogs} />
             </div>
           </div>
 
