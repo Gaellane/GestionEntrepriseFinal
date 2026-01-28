@@ -13,10 +13,15 @@ import InventairePerform from "../pages/inventaire/InventairePerform";
 import DashboardRespMagasin from "../pages/stock/DashboardRespMagasin";
 import AjustementStock from "../pages/stock/AjustementStock";
 import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
+import AchatSaisie from "../pages/achat/AchatSaisie";
+import AchatList from "../pages/achat/AchatList";
+import AchatFiche from "../pages/achat/AchatFiche";
 import AuditLogs from "../pages/admin/AuditLogs";
 import RolesAssignment from "../pages/admin/RolesAssignment";
 import RolesValidation from "../pages/admin/RolesValidation";
 
+//achat , articele 
+import ListeArticle from "../pages/article/ListeArticle";
 
 const AppRoutes = () => {
     return (
@@ -33,10 +38,19 @@ const AppRoutes = () => {
           <Route path='/login' element={<Login />} />
           <Route path="/unauthorized" element={<Unauthorized />} />          
           <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
-            
             <Route path="/home" element={<HomePage />} />          
             <Route path="/achats/proforma" element={<ProformaAchatSaisie />} />
             <Route path="/vente/proforma" element={<ProformaAchatSaisie />} />
+
+            <Route path="/articles">
+              <Route index element={<ListeArticle />} />
+            </Route>
+            <Route path="/achats">
+              <Route path="saisie" element={<AchatSaisie />} />
+              <Route path="demandes" element={<AchatList />} />
+              <Route path="fiche/:id" element={<AchatFiche />} />
+            </Route>
+
             <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
             <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />
             <Route path="/inventaire/form/:id" element={<InventaireForm/>} />
@@ -44,6 +58,7 @@ const AppRoutes = () => {
             <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
             <Route path="/stock/ajustements" element={<AjustementStock/>} />
             <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
+            
             <Route path="/admin/audit-logs" element={<AuditLogs/>} />
             <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
             <Route path="/admin/roles-validation" element={<RolesValidation/>} />
@@ -51,7 +66,7 @@ const AppRoutes = () => {
         
           
           </Route>
-          <Route/>
+          
 
         </Routes>
     )

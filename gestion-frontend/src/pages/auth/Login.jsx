@@ -17,8 +17,8 @@ import {
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@gmail.com');
+  const [password, setPassword] = useState('admin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();

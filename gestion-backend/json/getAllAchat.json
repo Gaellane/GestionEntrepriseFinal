@@ -1,0 +1,60 @@
+[
+    {
+        "achatLignes": [
+            {
+                "articleId": 18,
+                "prixUnitaire": 2000,
+                "prixUnitaireEstime": 2000,
+                "quantite": 20
+            },
+            {
+                "articleId": 16,
+                "prixUnitaire": 29700,
+                "prixUnitaireEstime": 29700,
+                "quantite": 14
+            }
+        ],
+        "achatProcess": {
+            "abreviation": "VC",
+            "id": 3,
+            "processName": "VALIDER COMPTABLE",
+            "valeur": 21
+        },
+        "dateEffective": "2026-01-30",
+        "demandeur": "ADMIN",
+        "id": 11,
+        "process": {
+            "abreviation": "VC",
+            "id": 3,
+            "processName": "VALIDER COMPTABLE",
+            "valeur": 21
+        },
+        "refe": "ACH-176937415332900001"
+    },
+    {
+        "achatLignes": [
+            {
+                "articleId": 23,
+                "prixUnitaire": 10000,
+                "prixUnitaireEstime": 10000,
+                "quantite": 20
+            }
+        ],
+        "achatProcess": {
+            "abreviation": "VM",
+            "id": 2,
+            "processName": "VALIDER MAGASINIER",
+            "valeur": 11
+        },
+        "dateEffective": "2026-01-29",
+        "demandeur": "ADMIN",
+        "id": 10,
+        "process": {
+            "abreviation": "VM",
+            "id": 2,
+            "processName": "VALIDER MAGASINIER",
+            "valeur": 11
+        },
+        "refe": "ACH-176936989919300004"
+    }
+]
