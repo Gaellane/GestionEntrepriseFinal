@@ -21,6 +21,12 @@ public interface AchatRepository extends JpaRepository<Achat, Integer> {
            "ORDER BY a.dateEntree DESC")
     List<Achat> findAllWithDemandeurAndProcess();
     
+    @Query("SELECT a FROM Achat a " +
+           "LEFT JOIN FETCH a.demandeur " +
+           "LEFT JOIN FETCH a.process " +
+           "WHERE a.id = :id")
+    Optional<Achat> findByIdWithDemandeurAndProcess(Integer id);
+
     // // Version paginée
     // @Query(value = "SELECT DISTINCT a FROM Achat a " +
     //                "LEFT JOIN FETCH a.demandeur " +

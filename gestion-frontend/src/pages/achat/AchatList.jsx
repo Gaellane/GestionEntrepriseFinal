@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchAchatAll } from '../../api/achatApi';
+import { fetchAchatAll, validerAchatMagasinier, validerAchatFinancier } from '../../api/achatApi';
 import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCartIcon,
@@ -20,23 +20,55 @@ import {
   DocumentTextIcon,
   ClockIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const AchatList = () => {
   const [achats, setAchats] = useState([]);
+  const [filteredAchats, setFilteredAchats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedAchats, setExpandedAchats] = useState({}); // Pour suivre quels achats sont dépliés
-  const navigate = useNavigate();   
+  const [expandedAchats, setExpandedAchats] = useState({});
+  const navigate = useNavigate();
+
+  // États pour les filtres
+  const [filters, setFilters] = useState({
+    searchRef: '',
+    demandeur: '',
+    dateMin: '',
+    dateMax: '',
+    processValeur: ''
+  });
+
+  // États pour les options de filtre
+  const [demandeurs, setDemandeurs] = useState([]);
+  const [processOptions, setProcessOptions] = useState([]);
+
+  // État pour la visibilité des filtres
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchAchat = async () => {
     try {
       setLoading(true);
       const data = await fetchAchatAll();
       setAchats(data || []);
-      
-      // Initialiser l'état des achats dépliés (tous fermés par défaut)
+      setFilteredAchats(data || []);
+
+      // Extraire les demandeurs uniques
+      const uniqueDemandeurs = [...new Set(data?.map(achat => achat.demandeur).filter(Boolean))];
+      setDemandeurs(uniqueDemandeurs);
+
+      // Extraire les options de processus
+      const uniqueProcess = [...new Set(data?.map(achat => ({
+        valeur: achat.process?.valeur,
+        label: getProcessConfig(achat.process?.valeur || 0).label
+      })).filter(p => p.valeur !== undefined))];
+      setProcessOptions(uniqueProcess);
+
+      // Initialiser l'état des achats dépliés
       const initialExpandedState = {};
       data?.forEach(achat => {
         initialExpandedState[achat.id] = false;
@@ -50,11 +82,54 @@ const AchatList = () => {
     }
   };
 
+  // Appliquer les filtres
+  useEffect(() => {
+    let result = [...achats];
+
+    // Filtre par référence (recherche)
+    if (filters.searchRef) {
+      result = result.filter(achat =>
+        achat.refe?.toLowerCase().includes(filters.searchRef.toLowerCase())
+      );
+    }
+
+    // Filtre par demandeur
+    if (filters.demandeur) {
+      result = result.filter(achat => achat.demandeur === filters.demandeur);
+    }
+
+    // Filtre par valeur de processus
+    if (filters.processValeur) {
+      result = result.filter(achat => achat.process?.valeur?.toString() === filters.processValeur);
+    }
+
+    // Filtre par date minimum
+    if (filters.dateMin) {
+      const dateMin = new Date(filters.dateMin);
+      result = result.filter(achat => {
+        const achatDate = new Date(achat.dateEffective);
+        return achatDate >= dateMin;
+      });
+    }
+
+    // Filtre par date maximum
+    if (filters.dateMax) {
+      const dateMax = new Date(filters.dateMax);
+      // Ajouter un jour pour inclure la date sélectionnée
+      dateMax.setDate(dateMax.getDate() + 1);
+      result = result.filter(achat => {
+        const achatDate = new Date(achat.dateEffective);
+        return achatDate < dateMax;
+      });
+    }
+
+    setFilteredAchats(result);
+  }, [filters, achats]);
+
   const handleViewDetails = (achatId) => {
-    navigate(`/achats/details/${achatId}`);
+    navigate(`/achats/fiche/${achatId}`);
   };
 
-  // Toggle l'affichage des lignes d'articles
   const toggleExpandAchat = (achatId) => {
     setExpandedAchats(prev => ({
       ...prev,
@@ -62,22 +137,49 @@ const AchatList = () => {
     }));
   };
 
-  // Toggle tous les achats
   const toggleAllAchats = () => {
     const allExpanded = Object.values(expandedAchats).every(val => val === true);
     
     const newState = {};
-    achats.forEach(achat => {
+    filteredAchats.forEach(achat => {
       newState[achat.id] = !allExpanded;
     });
     setExpandedAchats(newState);
   };
 
+  // Gérer les changements de filtre
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
+
+  // Réinitialiser les filtres
+  const resetFilters = () => {
+    setFilters({
+      searchRef: '',
+      demandeur: '',
+      dateMin: '',
+      dateMax: '',
+      processValeur: ''
+    });
+    setShowFilters(false);
+  };
+
+  // Définir la date d'aujourd'hui comme date max par défaut
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setFilters(prev => ({
+      ...prev,
+      dateMax: today
+    }));
+  }, []);
+
   useEffect(() => {
     fetchAchat();
   }, []);
 
-  // Calculer le montant total d'un achat
   const calculerMontantTotal = (achat) => {
     if (!achat.achatLignes || achat.achatLignes.length === 0) return 0;
     
@@ -86,11 +188,11 @@ const AchatList = () => {
     }, 0).toFixed(2);
   };
 
-  // Déterminer les boutons et labels selon la valeur du processus
   const getProcessConfig = (valeur) => {
     switch (valeur) {
       case 1:
         return {
+          id: 1,
           buttonText: "Valider Magasinier",
           buttonColor: "from-emerald-500 to-green-600",
           buttonIcon: CheckCircleIcon,
@@ -100,6 +202,7 @@ const AchatList = () => {
         };
       case 11:
         return {
+          id: 11,
           buttonText: "Valider Financier",
           buttonColor: "from-purple-500 to-indigo-600",
           buttonIcon: BanknotesIcon,
@@ -109,6 +212,7 @@ const AchatList = () => {
         };
       case 21:
         return {
+          id: 21,
           buttonText: "Lancer Commande",
           buttonColor: "from-orange-500 to-amber-600",
           buttonIcon: TruckIcon,
@@ -118,6 +222,7 @@ const AchatList = () => {
         };
       case 31:
         return {
+          id: 31,
           buttonText: "Réception",
           buttonColor: "from-cyan-500 to-blue-600",
           buttonIcon: ArchiveBoxIcon,
@@ -127,7 +232,8 @@ const AchatList = () => {
         };
       case 41:
         return {
-          buttonText: null, // Pas de bouton
+          id: 41,
+          buttonText: null,
           buttonColor: "",
           buttonIcon: null,
           label: "Réceptionné",
@@ -136,6 +242,7 @@ const AchatList = () => {
         };
       case 0:
         return {
+          id: 0,
           buttonText: "Ré-Envoyer",
           buttonColor: "from-red-500 to-pink-600",
           buttonIcon: ArrowPathIcon,
@@ -145,6 +252,7 @@ const AchatList = () => {
         };
       default:
         return {
+          id: -1,
           buttonText: "Action",
           buttonColor: "from-gray-500 to-gray-600",
           buttonIcon: DocumentTextIcon,
@@ -155,22 +263,38 @@ const AchatList = () => {
     }
   };
 
-  // Gérer les actions des boutons
-  const handleAction = (achatId, actionType) => {
-    console.log(`Action ${actionType} sur achat ${achatId}`);
-    // TODO: Implémenter la logique d'action
+  const handleAction = async (achatId, actionType, ids) => {
+    switch (ids) {
+      case 1:
+        const resMg = await validerAchatMagasinier(achatId);
+        if (resMg.ok) {
+          alert('Achat validé par le magasinier avec succès');
+        }
+        break;
+      case 11:
+        const resFnc = await validerAchatFinancier(achatId);
+        if (resFnc.ok) {
+          alert('Achat validé par le financier avec succès');
+        }
+        break;
+      case 21 :
+        navigate(`/achats/commande/saisie/${achatId}`);
+        break;
+      default:
+        alert(`Action "${actionType}" non implémentée.`);
+        break;
+    }
+    
+    await fetchAchat();
   };
 
-  // Gérer l'annulation
   const handleCancel = (achatId) => {
     if (window.confirm('Êtes-vous sûr de vouloir annuler cet achat ?')) {
       console.log(`Annulation achat ${achatId}`);
-      // TODO: Implémenter la logique d'annulation
     }
   };
 
-  // Compter le nombre d'achats avec lignes
-  const achatsAvecLignes = achats.filter(achat => achat.achatLignes && achat.achatLignes.length > 0).length;
+  const achatsAvecLignes = filteredAchats.filter(achat => achat.achatLignes && achat.achatLignes.length > 0).length;
   const tousExpanded = Object.values(expandedAchats).every(val => val === true) && achatsAvecLignes > 0;
 
   if (loading) {
@@ -217,7 +341,9 @@ const AchatList = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">Liste des Achats</h1>
-                <p className="text-gray-600">{achats.length} achat(s) au total</p>
+                <p className="text-gray-600">
+                  {filteredAchats.length} achat(s) trouvé(s) sur {achats.length}
+                </p>
               </div>
             </div>
 
@@ -242,6 +368,14 @@ const AchatList = () => {
               )}
               
               <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+              >
+                <FunnelIcon className="w-4 h-4 mr-2" />
+                <span>Filtres {Object.values(filters).some(f => f) && '•'}</span>
+              </button>
+              
+              <button
                 onClick={fetchAchat}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
               >
@@ -250,12 +384,170 @@ const AchatList = () => {
               </button>
             </div>
           </div>
+
+          {/* Barre de recherche */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={filters.searchRef}
+                onChange={(e) => handleFilterChange('searchRef', e.target.value)}
+                placeholder="Rechercher par référence..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+              {filters.searchRef && (
+                <button
+                  onClick={() => handleFilterChange('searchRef', '')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filtres avancés */}
+          {showFilters && (
+            <div className="mt-6 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Filtres avancés</h3>
+                <button
+                  onClick={resetFilters}
+                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center"
+                >
+                  <XMarkIcon className="w-4 h-4 mr-1" />
+                  Réinitialiser
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Filtre par demandeur */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Demandeur
+                  </label>
+                  <select
+                    value={filters.demandeur}
+                    onChange={(e) => handleFilterChange('demandeur', e.target.value)}
+                    className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value="">Tous les demandeurs</option>
+                    {demandeurs.map((demandeur, index) => (
+                      <option key={index} value={demandeur}>
+                        {demandeur}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtre par statut */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Statut
+                  </label>
+                  <select
+                    value={filters.processValeur}
+                    onChange={(e) => handleFilterChange('processValeur', e.target.value)}
+                    className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value="">Tous les statuts</option>
+                    {processOptions.map((process, index) => (
+                      <option key={index} value={process.valeur}>
+                        {process.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtre par dates */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date min
+                    </label>
+                    <input
+                      type="date"
+                      value={filters.dateMin}
+                      onChange={(e) => handleFilterChange('dateMin', e.target.value)}
+                      className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date max
+                    </label>
+                    <input
+                      type="date"
+                      value={filters.dateMax}
+                      onChange={(e) => handleFilterChange('dateMax', e.target.value)}
+                      className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Indicateurs de filtres actifs */}
+              {Object.values(filters).some(f => f) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-2">
+                    {filters.demandeur && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                        Demandeur: {filters.demandeur}
+                        <button
+                          onClick={() => handleFilterChange('demandeur', '')}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {filters.processValeur && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                        Statut: {processOptions.find(p => p.valeur === filters.processValeur)?.label}
+                        <button
+                          onClick={() => handleFilterChange('processValeur', '')}
+                          className="ml-2 text-purple-600 hover:text-purple-800"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {filters.dateMin && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                        Après: {new Date(filters.dateMin).toLocaleDateString('fr-FR')}
+                        <button
+                          onClick={() => handleFilterChange('dateMin', '')}
+                          className="ml-2 text-green-600 hover:text-green-800"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                    {filters.dateMax && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
+                        Avant: {new Date(filters.dateMax).toLocaleDateString('fr-FR')}
+                        <button
+                          onClick={() => handleFilterChange('dateMax', '')}
+                          className="ml-2 text-orange-600 hover:text-orange-800"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Achats List */}
         <div className="space-y-6">
-          {achats.length > 0 ? (
-            achats.map((achat) => {
+          {filteredAchats.length > 0 ? (
+            filteredAchats.map((achat) => {
               const processConfig = getProcessConfig(achat.process?.valeur || 0);
               const ButtonIcon = processConfig.buttonIcon;
               const isExpanded = expandedAchats[achat.id];
@@ -291,10 +583,9 @@ const AchatList = () => {
                       </div>
                       
                       <div className="mt-3 md:mt-0 flex items-center space-x-2">
-                        {/* Bouton principal */}
                         {processConfig.buttonText && (
                           <button
-                            onClick={() => handleAction(achat.id, processConfig.buttonText)}
+                            onClick={() => handleAction(achat.id, processConfig.buttonText, processConfig.id)}
                             className={`px-4 py-2 bg-gradient-to-r ${processConfig.buttonColor} text-white rounded-lg hover:opacity-90 transition-all flex items-center space-x-2`}
                           >
                             {ButtonIcon && <ButtonIcon className="w-4 h-4" />}
@@ -302,7 +593,6 @@ const AchatList = () => {
                           </button>
                         )}
                         
-                        {/* Bouton annuler */}
                         {processConfig.showCancel && (
                           <button
                             onClick={() => handleCancel(achat.id)}
@@ -318,7 +608,7 @@ const AchatList = () => {
                   
                   {/* Détails de l'achat */}
                   <div className="px-6 py-4 bg-gray-50">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Processus</h4>
                         <div className="flex items-center space-x-2">
@@ -326,25 +616,13 @@ const AchatList = () => {
                             <ClockIcon className="w-4 h-4 text-purple-600" />
                           </div>
                           <div>
-                            <span className="text-sm text-gray-900">{achat.process?.processName}</span>
+                            <span className="text-sm text-gray-900">{achat.process?.processName} ({achat.achatProcess?.abreviation})</span>
                             <p className="text-xs text-gray-500">Étape {achat.process?.valeur}</p>
                           </div>
                         </div>
                       </div>
                       
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Informations</h4>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">ID:</span>
-                            <span className="text-sm font-medium">{achat.id}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Process:</span>
-                            <span className="text-sm font-medium">{achat.achatProcess?.abreviation}</span>
-                          </div>
-                        </div>
-                      </div>
+                    
                       
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Montant</h4>
@@ -361,46 +639,40 @@ const AchatList = () => {
                     </div>
                   </div>
                   
-                  {/* Bouton pour afficher/réduire les lignes */}
                   {hasLignes && (
                     <div className="px-6 py-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        
-                        <button
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <button
                             onClick={() => toggleExpandAchat(achat.id)}
                             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-                            >
+                          >
                             {isExpanded ? (
-                                <>
+                              <>
                                 <ChevronUpIcon className="w-4 h-4" />
                                 <span className="text-sm font-medium">Réduire les articles</span>
-                            </>
+                              </>
                             ) : (
-                                <>
+                              <>
                                 <ChevronDownIcon className="w-4 h-4" />
                                 <span className="text-sm font-medium">Afficher les articles ({achat.achatLignes.length})</span>
-                            </>
+                              </>
                             )}
-                        </button>
+                          </button>
                         </div>
-                         <div className="flex space-x-3">
-                            <button
+                        <div className="flex space-x-3">
+                          <button
                             onClick={() => handleViewDetails(achat.id)}
                             className="px-3 py-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors flex items-center space-x-1"
-                            >
+                          >
                             <EyeIcon className="w-4 h-4" />
                             <span className="text-sm">Détails complets</span>
-                            </button>
+                          </button>
                         </div>
-
-                            
-                           
                       </div>
                     </div>
                   )}
                   
-                  {/* Lignes d'achat (conditionnellement affichées) */}
                   {hasLignes && isExpanded && (
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                       <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center justify-between">
@@ -436,38 +708,36 @@ const AchatList = () => {
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div>
                                     <div className="font-medium text-gray-900">
-                                      {ligne.article?.articleNom || 'Article non spécifié'}
+                                      {ligne.articleNom || 'Article non spécifié'}
                                     </div>
-                                    {ligne.article?.refe && (
-                                      <div className="text-xs text-gray-500">{ligne.article.refe}</div>
-                                    )}
-                                    {ligne.article?.description && (
-                                      <div className="text-xs text-gray-400 truncate max-w-xs">
-                                        {ligne.article.description}
-                                      </div>
+                                    {ligne.articleRefe && (
+                                      <div className="text-xs text-gray-500">Réf: {ligne.articleRefe}</div>
                                     )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="text-gray-900">{ligne.quantite}</div>
-                                  {ligne.article?.unite?.abreviation && (
-                                    <div className="text-xs text-gray-500">
-                                      {ligne.article.unite.abreviation}
-                                    </div>
-                                  )}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="text-gray-900">{ligne.prixUnitaire?.toFixed(2)} €</div>
-                                  <div className="text-xs text-gray-500">unitaire</div>
+                                  {ligne.prixUnitaireEstime && ligne.prixUnitaireEstime !== ligne.prixUnitaire && (
+                                    <div className="text-xs text-gray-500">
+                                      Estimé: {ligne.prixUnitaireEstime?.toFixed(2)} €
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="font-medium text-emerald-600">
                                     {(ligne.quantite * ligne.prixUnitaire)?.toFixed(2)} €
                                   </div>
+                                  {ligne.prixUnitaireEstime && ligne.prixUnitaireEstime !== ligne.prixUnitaire && (
+                                    <div className="text-xs text-gray-500">
+                                      Estimé: {(ligne.quantite * ligne.prixUnitaireEstime)?.toFixed(2)} €
+                                    </div>
+                                  )}
                                 </td>
                               </tr>
                             ))}
-                            {/* Ligne de total */}
                             <tr className="bg-gray-50">
                               <td colSpan="3" className="px-4 py-3 text-right font-medium text-gray-700">
                                 Total :
@@ -483,11 +753,6 @@ const AchatList = () => {
                       </div>
                     </div>
                   )}
-                  
-                  {/* Actions secondaires */}
-                  <div className="px-6 py-4 border-t border-gray-200">
-                    
-                  </div>
                 </div>
               );
             })
@@ -496,8 +761,18 @@ const AchatList = () => {
               <ShoppingCartIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Aucun achat trouvé</h3>
               <p className="text-gray-600 max-w-md mx-auto">
-                Commencez par créer votre premier achat.
+                {Object.values(filters).some(f => f) 
+                  ? "Aucun achat ne correspond à vos critères de recherche. Essayez de modifier vos filtres."
+                  : "Commencez par créer votre premier achat."}
               </p>
+              {Object.values(filters).some(f => f) && (
+                <button
+                  onClick={resetFilters}
+                  className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -15,7 +15,7 @@ import AjustementStock from "../pages/stock/AjustementStock";
 import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
 import AchatSaisie from "../pages/achat/AchatSaisie";
 import AchatList from "../pages/achat/AchatList";
-
+import AchatFiche from "../pages/achat/AchatFiche";
 
 //achat , articele 
 import ListeArticle from "../pages/article/ListeArticle";
@@ -45,6 +45,7 @@ const AppRoutes = () => {
             <Route path="/achats">
               <Route path="saisie" element={<AchatSaisie />} />
               <Route path="demandes" element={<AchatList />} />
+              <Route path="fiche/:id" element={<AchatFiche />} />
             </Route>
 
             <Route path="/stock/inventaires" element={<DemandeInventaires/>} />

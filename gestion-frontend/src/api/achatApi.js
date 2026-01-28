@@ -25,3 +25,32 @@ export async function fetchAchatAll() {
   const data = await res.json();
   return data;
 }
+
+export async function fetchAchatById(id) {
+  const url = `${apiBase}/api/achats/${id}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders()
+  });
+  const data = await res.json();
+  return data;
+}
+
+export async function validerAchatMagasinier(id) {
+  const url = `${apiBase}/api/achats/valider/${id}/magasinier`;
+  const res = await fetch(url, { 
+    method: 'GET', 
+    headers: authHeaders()
+  });
+  return (res);
+}
+
+export async function validerAchatFinancier(id) { 
+  const url = `${apiBase}/api/achats/valider/${id}/financier`;
+  const res = await fetch(url, { 
+    method: 'GET', 
+    headers: authHeaders()
+  });
+  return (res);
+
+}

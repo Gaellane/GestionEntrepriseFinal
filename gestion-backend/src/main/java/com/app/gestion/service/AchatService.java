@@ -131,6 +131,94 @@ public class AchatService {
         }
         return achatCPLs;
     }
+
+    public AchatCPL getAchatById(Integer id) {
+        Achat achat = achatRepository.findByIdWithDemandeurAndProcess(id)
+                .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
+        return AchatCPL.mapToDTO(achat);
+    }
+
+    public Achat validerMagasinier(Integer id){
+        Achat achat = achatRepository.findById(id).orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
+        if(achat.getProcess().getValeur() != 1){
+            throw new RuntimeException("Achat is not in a valid state for magasinier validation");
+        }
+
+        AchatProcess validerProcess = achatProcessRepository.findByValeur(11).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 11 not found"));
+        AchatHistorique historique = new AchatHistorique();
+
+        //audit
+        Action action = actionRepository.findByActionName("VALIDATE").orElseThrow(() -> new RuntimeException("Action VALIDATE_MAGASINIER not found"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        Utilisateur currentUser = currentUserUtil.getCurrentUser();
+        
+        // set data audit log
+        AuditLog auditLog = new AuditLog();
+        auditLog.setUtilisateur(currentUser);
+        auditLog.setAction(action);
+        auditLog.setActionTimestamp(now);
+        auditLog.setClasses("Achat");
+        auditLog.setDetails("Validated magasinier for achat with reference " + achat.getRefe());
+        auditLog.setIdsClasses(achat.getId().toString());
+        auditLog.setNewValues("Process changed to " + validerProcess.getProcessName());
+        
+        
+        
+        historique.setAchat(achat);
+        historique.setProcess(validerProcess);
+        historique.setDateEntree(LocalDateTime.now());
+        
+        achat.setProcess(validerProcess);
+        
+        achatHistoriqueRepository.save(historique);
+        
+        auditLogRepository.save(auditLog);
+        
+
+        return achatRepository.save(achat);
+    }
+
+    public Achat validerFinancier(Integer id){
+        Achat achat = achatRepository.findById(id).orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
+        if(achat.getProcess().getValeur() != 11){
+            throw new RuntimeException("Achat is not in a valid state for financier validation");
+        }
+
+        AchatProcess validerProcess = achatProcessRepository.findByValeur(21).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 21 not found"));
+        AchatHistorique historique = new AchatHistorique();
+        
+        //audit
+        Action action = actionRepository.findByActionName("VALIDATE").orElseThrow(() -> new RuntimeException("Action VALIDATE_FINANCIER not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+        Utilisateur currentUser = currentUserUtil.getCurrentUser();
+        
+        // set data audit log
+        AuditLog auditLog = new AuditLog();
+        auditLog.setUtilisateur(currentUser);
+        auditLog.setAction(action);
+        auditLog.setActionTimestamp(now);
+        auditLog.setClasses("Achat");
+        auditLog.setDetails("Validated financier for achat with reference " + achat.getRefe());
+        auditLog.setIdsClasses(achat.getId().toString());
+        auditLog.setNewValues("Process changed to " + validerProcess.getProcessName());
+        
+
+
+        historique.setAchat(achat);
+        historique.setProcess(validerProcess);
+        historique.setDateEntree(LocalDateTime.now());
+        
+        achat.setProcess(validerProcess);
+        
+        achatHistoriqueRepository.save(historique);
+
+        auditLogRepository.save(auditLog);
+
+        return achatRepository.save(achat);
+    }
+
     // public List<Achat> getAllAchats() {
     //     return achatRepository.findAll();
     // }
