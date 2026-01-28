@@ -16,6 +16,11 @@ import {
   UserGroupIcon,
   HomeIcon,
   PlusIcon,
+  DocumentDuplicateIcon,
+  AdjustmentsHorizontalIcon,
+  ShieldCheckIcon,
+  ClipboardDocumentCheckIcon,
+  CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CONFIG = {
@@ -241,6 +246,35 @@ export const SIDEBAR_CONFIG = {
           path: '/stock/inventaires',
           roles: [ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
           icon: <ListBulletIcon className="w-4 h-4" />
+        }
+      ]
+    },
+    {
+      id: 'administration',
+      label: 'Administration',
+      icon: <ShieldCheckIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+      subItems: [
+        {
+          id: 'audit-logs',
+          label: 'Logs d\'audit',
+          path: '/admin/audit-logs',
+          icon: <ClipboardDocumentCheckIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-attribution',
+          label: 'Gestion de roles',
+          path: '/admin/roles-attribution',
+          icon: <UserGroupIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-validation',
+          label: 'Validation roles',
+          path: '/admin/roles-validation',
+          icon: <CheckBadgeIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
         }
       ]
     }, 

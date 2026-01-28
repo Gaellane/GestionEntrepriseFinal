@@ -487,3 +487,21 @@ ALTER TABLE lots ADD COLUMN IF NOT EXISTS date_blocage TIMESTAMP;
 COMMENT ON COLUMN lots.statut_lot IS 'Statut du lot: ACTIF, BLOQUE, EXPIRE_DLC, EXPIRE_DLUO';
 COMMENT ON COLUMN lots.raison_blocage IS 'Raison du blocage du lot';
 COMMENT ON COLUMN lots.date_blocage IS 'Date du blocage du lot';
+
+-- Ajout de statuts pour gerer l'etat de l'historique des changements de role
+
+CREATE TABLE roles_attribution_process (
+    id SERIAL PRIMARY KEY,
+    process_name VARCHAR(100) NOT NULL,
+    abreviation VARCHAR(10) NOT NULL,
+    valeur INTEGER NOT NULL
+);
+
+INSERT INTO roles_attribution_process (process_name, abreviation, valeur) VALUES
+('Création de l''attribution de role', 'CRE', 1),
+('Validation attribution de role', 'VAL', 2),
+('Rejet attribution de role', 'REJ', 3),
+('Annulation attribution de role', 'ANN', 4);
+
+ALTER TABLE roles_attribution_historiques ADD COLUMN process_id INTEGER REFERENCES roles_attribution_process(id) ;
+

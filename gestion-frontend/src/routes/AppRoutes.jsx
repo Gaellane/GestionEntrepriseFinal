@@ -16,6 +16,9 @@ import ArticlesRemaining from "../pages/stock/ArticlesRemaining";
 import AchatSaisie from "../pages/achat/AchatSaisie";
 import AchatList from "../pages/achat/AchatList";
 import AchatFiche from "../pages/achat/AchatFiche";
+import AuditLogs from "../pages/admin/AuditLogs";
+import RolesAssignment from "../pages/admin/RolesAssignment";
+import RolesValidation from "../pages/admin/RolesValidation";
 
 //achat , articele 
 import ListeArticle from "../pages/article/ListeArticle";
@@ -56,6 +59,12 @@ const AppRoutes = () => {
             <Route path="/stock/ajustements" element={<AjustementStock/>} />
             <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
             
+            <Route path="/admin/audit-logs" element={<AuditLogs/>} />
+            <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
+            <Route path="/admin/roles-validation" element={<RolesValidation/>} />
+
+        
+          
           </Route>
           
 

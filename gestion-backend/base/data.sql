@@ -194,3 +194,7 @@ INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
 
 INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
 ('MAGINV','MAGASINIER INVENTAIRE', 9, 5);
+
+
+INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
+('ADMINSYS','ADMINISTRATEUR SYSTEME', 50, 1);
