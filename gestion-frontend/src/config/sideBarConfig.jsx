@@ -1,5 +1,6 @@
 // config/sidebarConfig.js
-import { ROLES,PERMISSIONS,ROLE_PERMISSIONS } from './permissions';
+import { ROLES, PERMISSIONS, ROLE_PERMISSIONS } from './permissions';
+import { useAuth } from '../hooks/useAuth';
 import {
   ShoppingCartIcon,
   ChartBarIcon,
@@ -15,6 +16,8 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   HomeIcon,
+  CurrencyDollarIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CONFIG = {
@@ -24,7 +27,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Accueil',
       icon: <HomeIcon className="w-5 h-5" />,
       alwaysVisible: true,
-      subItems:[
+      subItems: [
         {
           id: 'Page',
           label: 'Page',
@@ -71,11 +74,32 @@ export const SIDEBAR_CONFIG = {
       permission: 'view_sales',
       subItems: [
         {
-          id: 'proforma-vente',
-          label: 'Proforma',
-          path: '/vente/proforma',
+          id: 'clients',
+          label: 'Clients',
+          path: '/clients',
+          icon: <UserGroupIcon className="w-4 h-4" />,
+          permission: 'manage_customers'
+        },
+        {
+          id: 'tarification',
+          label: 'Tarification',
+          path: '/tarification',
+          icon: <CurrencyDollarIcon className="w-4 h-4" />,
+          permission: 'view_sales'
+        },
+        {
+          id: 'proforma-ventes',
+          label: 'Pro-formas',
+          path: '/proforma-ventes',
           icon: <DocumentTextIcon className="w-4 h-4" />,
-          permission: 'view_sales_proforma'
+          permission: 'view_sales'
+        },
+        {
+          id: 'commandes-ventes',
+          label: 'Commandes',
+          path: '/ventes',
+          icon: <DocumentCheckIcon className="w-4 h-4" />,
+          permission: 'view_sales'
         },
         {
           id: 'insertion-vente',
@@ -83,13 +107,6 @@ export const SIDEBAR_CONFIG = {
           path: '/vente/insertion',
           icon: <DocumentPlusIcon className="w-4 h-4" />,
           permission: 'create_sales'
-        },
-        {
-          id: 'clients',
-          label: 'Clients',
-          path: '/vente/clients',
-          icon: <UserGroupIcon className="w-4 h-4" />,
-          permission: 'manage_customers'
         }
       ]
     },
@@ -112,6 +129,28 @@ export const SIDEBAR_CONFIG = {
           path: '/livraison/enregistrement',
           icon: <DocumentCheckIcon className="w-4 h-4" />,
           permission: 'register_delivery'
+        }
+      ]
+    },
+    {
+      id: 'reporting',
+      label: 'Reporting',
+      icon: <ChartPieIcon className="w-5 h-5" />,
+      permission: 'view_sales',
+      subItems: [
+        {
+          id: 'dashboard-kpi',
+          label: 'Dashboard KPI',
+          path: '/reporting/dashboard',
+          icon: <ChartBarIcon className="w-4 h-4" />,
+          permission: 'view_sales'
+        },
+        {
+          id: 'export-ventes',
+          label: 'Export Ventes',
+          path: '/reporting/export',
+          icon: <DocumentTextIcon className="w-4 h-4" />,
+          permission: 'view_sales'
         }
       ]
     },
@@ -154,6 +193,21 @@ export const SIDEBAR_CONFIG = {
         }
       ]
     },
+    {
+      id: 'configuration',
+      label: 'Configuration',
+      icon: <Cog6ToothIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN],
+      subItems: [
+        {
+          id: 'parametres',
+          label: 'Paramètres Système',
+          path: '/configurations',
+          icon: <Cog6ToothIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN]
+        }
+      ]
+    }
 
     {
       id: 'stock',
@@ -224,31 +278,28 @@ export const SIDEBAR_CONFIG = {
 
 export const canAccessRoute = (routePath, user) => {
   if (!user || !user.role) return false;
-  
+
   // Trouver la route dans la configuration
   const route = findRouteByPath(routePath);
   if (!route) return false;
-  
+
   // Vérifier l'accès
   return hasPermissionToItem(route, user);
 };
 
-/**
- * Récupère toutes les routes accessibles pour un rôle
- */
 export const getAccessibleRoutes = (userRole) => {
   const accessibleRoutes = [];
-  
+
   SIDEBAR_CONFIG.categories.forEach(category => {
     // Vérifier si la catégorie est accessible
-    const canAccessCategory = canAccessCategoryBasedOnRole(category, userRole) || 
-                              canAccessCategoryBasedOnPermission(category, userRole);
-    
+    const canAccessCategory = canAccessCategoryBasedOnRole(category, userRole) ||
+      canAccessCategoryBasedOnPermission(category, userRole);
+
     if (canAccessCategory && category.subItems) {
       category.subItems.forEach(subItem => {
-        const canAccessSubItem = canAccessItemBasedOnRole(subItem, userRole) || 
-                                 canAccessItemBasedOnPermission(subItem, userRole);
-        
+        const canAccessSubItem = canAccessItemBasedOnRole(subItem, userRole) ||
+          canAccessItemBasedOnPermission(subItem, userRole);
+
         if (canAccessSubItem) {
           accessibleRoutes.push({
             path: subItem.path,
@@ -261,7 +312,7 @@ export const getAccessibleRoutes = (userRole) => {
       });
     }
   });
-  
+
   return accessibleRoutes;
 };
 
@@ -270,15 +321,15 @@ export const getAccessibleRoutes = (userRole) => {
  */
 export const useRouteAccess = () => {
   const { user } = useAuth();
-  
+
   const canAccess = (routePath) => {
     return canAccessRoute(routePath, user);
   };
-  
+
   const getMyAccessibleRoutes = () => {
     return user ? getAccessibleRoutes(user.role) : [];
   };
-  
+
   return {
     canAccess,
     getMyAccessibleRoutes,
@@ -334,17 +385,17 @@ const canAccessItemBasedOnPermission = (item, userRole) => {
 const hasPermissionToItem = (item, user) => {
   console.log("Checking access for item:", item, "and user:", user);
   if (!user || !user.role) return false;
-  
+
   // Vérifier par rôle
   if (item.roles && item.roles.includes(user.role)) {
     return true;
   }
-  
+
   // Vérifier par permission
   if (item.permission) {
     return hasRolePermission(user.role, item.permission);
   }
-  
+
   // Si ni rôle ni permission spécifiés, accessible à tous les utilisateurs connectés
   return true;
 };
