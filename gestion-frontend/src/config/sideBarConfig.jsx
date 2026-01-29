@@ -13,6 +13,7 @@ import {
   ListBulletIcon,
   PlusCircleIcon,
   ChartPieIcon,
+  BuildingOfficeIcon,
   UserGroupIcon,
   HomeIcon,
   CurrencyDollarIcon,
@@ -158,20 +159,37 @@ export const SIDEBAR_CONFIG = {
       label: 'Inventaire',
       icon: <CubeIcon className="w-5 h-5" />,
       permission: 'view_inventory',
+      roles : [ROLES.MAGASINIER,ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGINV],
       subItems: [
         {
           id: 'initier-inventaire',
           label: 'Initier',
-          path: '/inventaire/initier',
+          path: '/inventaire/form/new',
           icon: <PlusCircleIcon className="w-4 h-4" />,
-          permission: 'initiate_inventory'
+          permission: 'initiate_inventory',
+          roles : [ROLES.MAGASINIER,ROLES.ADMIN,ROLES.MAGINV]
+        },
+        {
+          id: 'mes-demandes-inventaire',
+          label: 'Mes demandes',
+          path: '/inventaire/mes-demandes',
+          icon: <ListBulletIcon className="w-4 h-4" />,
+          roles: [ROLES.MAGINV]
+        },
+        {
+          id: 'saisie-inventaire',
+          label: 'Saisie inventaire',
+          path: '/inventaire/perform/:id',
+          icon: <DocumentCheckIcon className="w-4 h-4" />,
+          roles: [ROLES.MAGINV]
         },
         {
           id: 'rapports-inventaire',
           label: 'Rapports',
-          path: '/inventaire/rapports',
+          path: '/stock/inventaires',
           icon: <ChartPieIcon className="w-4 h-4" />,
-          permission: 'view_inventory_reports'
+          permission: 'view_inventory_reports',
+          roles : [ROLES.MAGASINIER,ROLES.RESP_MAGASIN,ROLES.ADMIN],
         }
       ]
     },
@@ -190,6 +208,70 @@ export const SIDEBAR_CONFIG = {
         }
       ]
     }
+
+    {
+      id: 'stock',
+      label: 'Stock',
+      icon: <CubeIcon className="w-5 h-5" />,
+      permission: 'stock',
+      roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT,ROLES.MAGSORT,ROLES.MAGASINIER],
+      subItems: [
+        {
+          id: 'dashboard-stock',
+          label: 'Dashboard KPIs',
+          path: '/stock/dashboard',
+          roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN],
+          icon: <ChartBarIcon className="w-4 h-4" />
+        },
+        {
+          id: 'ajustements-stock',
+          label: 'Ajustements',
+          path: '/stock/ajustements',
+          roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN],
+          icon: <ChartPieIcon className="w-4 h-4" />
+        },
+        {
+          id: 'entree',
+          label: 'Entrer de stock',
+          path: '/stock/1',
+          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT],
+          icon: <PlusCircleIcon className="w-4 h-4" />,
+          permission: 'enter_stock'
+        },
+        {
+          id: 'sortie',
+          label: 'Sortie de stock',
+          path: '/stock/2',
+          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGSORT],
+          icon: <ChartPieIcon className="w-4 h-4" />,
+          permission: 'exit_stock'
+        }
+        ,
+        {
+          id: 'transfert',
+          label: 'Transfert',
+          path: '/stock/transfer',
+          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT,ROLES.MAGSORT,ROLES.MAGASINIER],
+          icon: <BuildingOfficeIcon className="w-4 h-4" />,
+          permission: 'transfer_stock'
+        }
+        ,
+        {
+          id: 'articles-remaining',
+          label: 'Articles restants',
+          path: '/stock/articles-remaining',
+          roles: [ROLES.MAGSORT, ROLES.MAGRECEPT, ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
+          icon: <ListBulletIcon className="w-4 h-4" />
+        },
+        {
+          id: 'demandes-inventaire',
+          label: 'Demandes inventaires',
+          path: '/stock/inventaires',
+          roles: [ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
+          icon: <ListBulletIcon className="w-4 h-4" />
+        }
+      ]
+    }, 
   ]
 };
 
@@ -260,8 +342,22 @@ export const useRouteAccess = () => {
 const findRouteByPath = (path) => {
   for (const category of SIDEBAR_CONFIG.categories) {
     if (category.subItems) {
-      const route = category.subItems.find(item => item.path === path);
-      if (route) return route;
+      // exact match first
+      const exact = category.subItems.find(item => item.path === path);
+      if (exact) return exact;
+
+      // support simple param routes like /inventaire/form/:id
+      for (const item of category.subItems) {
+        if (typeof item.path === 'string' && item.path.includes(':')) {
+          const pattern = '^' + item.path.split('/').map(seg => seg.startsWith(':') ? '[^/]+' : seg.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')).join('/') + '$';
+          try {
+            const re = new RegExp(pattern);
+            if (re.test(path)) return item;
+          } catch (e) {
+            // ignore invalid regex
+          }
+        }
+      }
     }
   }
   return null;
@@ -287,6 +383,7 @@ const canAccessItemBasedOnPermission = (item, userRole) => {
 };
 
 const hasPermissionToItem = (item, user) => {
+  console.log("Checking access for item:", item, "and user:", user);
   if (!user || !user.role) return false;
 
   // Vérifier par rôle
@@ -305,6 +402,7 @@ const hasPermissionToItem = (item, user) => {
 
 // Cette fonction dépend de votre système de permissions
 const hasRolePermission = (role, permission) => {
-  const permissions = ROLE_PERMISSIONS[role] || [];
+  const roleKey = role ? role.toString().toUpperCase() : null;
+  const permissions = ROLE_PERMISSIONS[roleKey] || [];
   return permissions.includes(permission);
 };

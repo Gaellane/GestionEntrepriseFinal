@@ -20,6 +20,7 @@ public class StockReservation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private Article article;
 
     @Column(name = "quantite", nullable = false)
@@ -30,11 +31,13 @@ public class StockReservation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "process_id", nullable = false)
+    @lombok.ToString.Exclude
     private StockReservationProcess process;
 
     @Column(name = "reference", nullable = false, length = 100)
     private String reference;
 
     @OneToMany(mappedBy = "stock", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<StockReservationHistorique> stockReservationHistoriques;
 }

@@ -17,10 +17,12 @@ public class AchatLigne {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "achat_id", nullable = false)
+    @lombok.ToString.Exclude
     private Achat achat;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private Article article;
 
     @Column(name = "quantite", nullable = false)

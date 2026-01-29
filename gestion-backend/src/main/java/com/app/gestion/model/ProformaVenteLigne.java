@@ -17,10 +17,12 @@ public class ProformaVenteLigne {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "proforma_id", nullable = false)
+    @lombok.ToString.Exclude
     private ProformaVente proforma;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
+    @lombok.ToString.Exclude
     private Article article;
 
     @Column(name = "quantite", nullable = false)

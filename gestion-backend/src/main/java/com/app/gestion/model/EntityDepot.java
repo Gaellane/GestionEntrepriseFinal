@@ -17,9 +17,11 @@ public class EntityDepot {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
+    @lombok.ToString.Exclude
     private Entity entity;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "depot_id", nullable = false)
+    @lombok.ToString.Exclude
     private Depot depot;
 }

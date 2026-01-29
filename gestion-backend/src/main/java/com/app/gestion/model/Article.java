@@ -31,13 +31,16 @@ public class Article {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categorie_id")
+    @ToString.Exclude
     private Categorie categorie;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unite_id")
+    @ToString.Exclude
     private Unite unite;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<ArticleEntity> articleEntities;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
@@ -56,21 +59,27 @@ public class Article {
     private List<LivraisonAchatLigne> livraisonAchatLignes;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Lot> lots;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<StockReservation> stockReservations;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<ProformaVenteLigne> proformaVenteLignes;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<VenteLigne> venteLignes;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<LivraisonVenteLigne> livraisonVenteLignes;
 
     @OneToMany(mappedBy = "article", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<InventaireLigne> inventaireLignes;
 
 

@@ -24,5 +24,6 @@ public class Action {
     private String description;
 
     @OneToMany(mappedBy = "action", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<AuditLog> auditLogs;
 }

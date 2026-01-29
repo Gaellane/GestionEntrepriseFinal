@@ -19,10 +19,12 @@ public class RolesAttributionHistorique {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id")
+    @lombok.ToString.Exclude
     private Utilisateur utilisateur;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @lombok.ToString.Exclude
     private Role role;
 
     @Column(name = "date_entree", nullable = false)
