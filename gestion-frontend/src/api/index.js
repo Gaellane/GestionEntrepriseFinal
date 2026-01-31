@@ -4,52 +4,75 @@ export { default as roleApi } from './roleApi';
 export * from './livraisonApi';
 export * from './kpiApi';
 
-import axios from 'axios';
+// Re-export API modules as named exports for backward compatibility
+export { default as articleApi } from './articleApi';
+export { default as clientApi } from './clientApi';
+export { default as configurationApi } from './configurationApi';
+export { default as proformaVenteApi } from './proformaVenteApi';
+export { tarificationApi } from './tarificationApi';
 
-const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + '/api';
 
-// Intercepteur pour ajouter le token à chaque requête
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+const handleUnauthorized = async () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+};
+
+const buildUrl = (path, params) => {
+    const url = new URL(`${BASE_URL}${path}`);
+    if (params) {
+        Object.keys(params).forEach(k => {
+            if (params[k] !== undefined && params[k] !== null) url.searchParams.set(k, params[k]);
+        });
     }
-);
+    return url.toString();
+};
 
-// Intercepteur pour gérer les erreurs de réponse
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-        }
-        return Promise.reject(error);
+const buildHeaders = (hasBody = false) => {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (hasBody) headers['Content-Type'] = 'application/json';
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+};
+
+const wrapResponse = async (res) => {
+    if (res.status === 401) {
+        await handleUnauthorized();
+        return Promise.reject(new Error('Unauthorized'));
     }
-);
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) {
+        const err = new Error(data?.message || res.statusText || 'Request failed');
+        err.status = res.status;
+        err.data = data;
+        throw err;
+    }
+    return { data, status: res.status };
+};
 
-export const articleApi = {
-    getAllArticles: async (params = {}) => {
-        const { page = 0, size = 1000 } = params;
-        const response = await api.get('/articles', { params: { page, size } });
-        return response.data;
+const api = {
+    get: async (path, options = {}) => {
+        const url = buildUrl(path, options.params);
+        const res = await fetch(url, { method: 'GET', headers: buildHeaders(false) });
+        return wrapResponse(res);
     },
-
-    getArticleById: async (id) => {
-        const response = await api.get(`/articles/${id}`);
-        return response.data;
+    post: async (path, body, options = {}) => {
+        const url = buildUrl(path, options.params);
+        const res = await fetch(url, { method: 'POST', headers: buildHeaders(true), body: JSON.stringify(body) });
+        return wrapResponse(res);
+    },
+    put: async (path, body, options = {}) => {
+        const url = buildUrl(path, options.params);
+        const res = await fetch(url, { method: 'PUT', headers: buildHeaders(true), body: JSON.stringify(body) });
+        return wrapResponse(res);
+    },
+    delete: async (path, options = {}) => {
+        const url = buildUrl(path, options.params);
+        const res = await fetch(url, { method: 'DELETE', headers: buildHeaders(false) });
+        return wrapResponse(res);
     }
 };
 

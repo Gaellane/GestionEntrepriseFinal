@@ -100,43 +100,42 @@ export const SIDEBAR_CONFIG = {
       id: 'vente',
       label: 'Vente',
       icon: <ChartBarIcon className="w-5 h-5" />,
-      permission: 'view_sales',
-      alwaysVisible : true,
+      roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
       subItems: [
         {
           id: 'clients',
           label: 'Clients',
           path: '/clients',
           icon: <UserGroupIcon className="w-4 h-4" />,
-          permission: 'manage_customers'
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
         },
         {
           id: 'tarification',
           label: 'Tarification',
           path: '/tarification',
           icon: <CurrencyDollarIcon className="w-4 h-4" />,
-          permission: 'view_sales'
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
         },
         {
           id: 'proforma-ventes',
           label: 'Pro-formas',
           path: '/proforma-ventes',
           icon: <DocumentTextIcon className="w-4 h-4" />,
-          permission: 'view_sales'
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
         },
         {
           id: 'commandes-ventes',
           label: 'Commandes',
           path: '/ventes',
           icon: <DocumentCheckIcon className="w-4 h-4" />,
-          permission: 'view_sales'
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
         },
         {
           id: 'insertion-vente',
           label: 'Insertion',
-          path: '/vente/insertion',
+          path: '/ventes/nouveau',
           icon: <DocumentPlusIcon className="w-4 h-4" />,
-          permission: 'create_sales'
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
         }
       ]
     },
@@ -238,7 +237,7 @@ export const SIDEBAR_CONFIG = {
           roles: [ROLES.ADMIN]
         }
       ]
-    }
+    },
 
     {
       id: 'stock',
@@ -336,7 +335,7 @@ export const SIDEBAR_CONFIG = {
 };
 
 
-export const canAccessRoute = async ({routePath, user}) => {
+export const canAccessRoute = (routePath, user) => {
   if (!user || !user.role) return false;
 
   // Trouver la route dans la configuration
@@ -416,6 +415,13 @@ const findRouteByPath = (path) => {
           } catch (e) {
             // ignore invalid regex
           }
+        }
+      }
+      // Support routes that extend a base subItem path, e.g. '/tarification/historique/123'
+      for (const item of category.subItems) {
+        if (typeof item.path === 'string' && path === item.path) return item;
+        if (typeof item.path === 'string' && path.startsWith(item.path + '/')) {
+          return item;
         }
       }
     }

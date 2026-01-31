@@ -44,6 +44,13 @@ public class TarificationController {
         return ResponseEntity.ok(prix);
     }
 
+    @GetMapping("/article/{articleId}/latest")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESP_VENTE', 'EMP_VENTE', 'RESP_ACHAT', 'EMP_ACHAT', 'RESP_DIRECTION')")
+    public ResponseEntity<ArticlePrixResponseDto> getLatestPrixByArticleId(@PathVariable Integer articleId) {
+        ArticlePrixResponseDto prix = tarificationService.getLatestPrixByArticleId(articleId);
+        return ResponseEntity.ok(prix);
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RESP_VENTE', 'RESP_ACHAT')")
     public ResponseEntity<Map<String, Object>> ajouterNouveauPrix(

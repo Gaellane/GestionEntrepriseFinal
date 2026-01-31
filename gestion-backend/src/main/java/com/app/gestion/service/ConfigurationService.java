@@ -32,7 +32,7 @@ public class ConfigurationService {
     private final ConfigurationRepository configurationRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
+
 
     @Transactional(readOnly = true)
     public List<ConfigurationResponseDto> getAllConfigurations() {
@@ -196,6 +196,7 @@ public class ConfigurationService {
 
     private String convertConfigToJson(Configuration config) {
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> configMap = new HashMap<>();
             configMap.put("id", config.getId());
             configMap.put("configKey", config.getConfigKey());

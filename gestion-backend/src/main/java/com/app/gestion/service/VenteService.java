@@ -39,7 +39,6 @@ public class VenteService {
     private final ConfigurationRepository configurationRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
     private final StockReservationService stockReservationService;
     private final VenteHistoriqueRepository venteHistoriqueRepository;
 
@@ -470,6 +469,7 @@ public class VenteService {
 
     private String convertVenteToJson(Vente vente) {
         try {
+            ObjectMapper objectMapper=new ObjectMapper();
             Map<String, Object> venteMap = new HashMap<>();
             venteMap.put("id", vente.getId());
             venteMap.put("refe", vente.getRefe());
@@ -752,6 +752,7 @@ public class VenteService {
      */
     private String convertLignesToJson(List<VenteLigne> lignes) {
         try {
+            ObjectMapper objectMapper=new ObjectMapper();
             List<Map<String, Object>> lignesData = lignes.stream().map(ligne -> {
                 Map<String, Object> data = new HashMap<>();
                 data.put("id", ligne.getId());

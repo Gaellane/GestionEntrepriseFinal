@@ -24,4 +24,8 @@ public interface ArticleEntityRepository extends JpaRepository<ArticleEntity, In
             "AND LOWER(ae.article.articleNom) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<ArticleEntity> searchArticlesByEntityId(@Param("entityId") Integer entityId,
             @Param("searchTerm") String searchTerm);
+
+    // Récupérer l'ArticleEntity actif pour un article donné (première entité trouvée)
+    @Query("SELECT ae FROM ArticleEntity ae WHERE ae.article.id = :articleId ORDER BY ae.id ASC")
+    Optional<ArticleEntity> findActiveByArticleId(@Param("articleId") Integer articleId);
 }

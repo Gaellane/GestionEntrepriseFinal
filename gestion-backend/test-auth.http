@@ -1,6 +1,12 @@
 @baseUrl = http://localhost:8180
 @contentType = application/json
 
+```plaintext
+@baseUrl = http://localhost:8180
+@contentType = application/json
+
+# Create users (roles and ids inferred from base/data.sql insert order)
+
 POST {{baseUrl}}/register
 Content-Type: {{contentType}}
 
@@ -9,52 +15,184 @@ Content-Type: {{contentType}}
     "email": "admin@gmail.com",
     "motDePasse": "admin",
     "entityId": 1,
-    "roleId":1
+    "roleId": 1
 }
 
+###
 
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Responsable Achat",
+    "email": "resp_achat@gmail.com",
+    "motDePasse": "resp_achat",
+    "entityId": 1,
+    "roleId": 2
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Employe Achat",
+    "email": "emp_achat@gmail.com",
+    "motDePasse": "emp_achat",
+    "entityId": 1,
+    "roleId": 3
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Responsable Vente",
+    "email": "resp_vente@gmail.com",
+    "motDePasse": "resp_vente",
+    "entityId": 1,
+    "roleId": 4
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Employe Vente",
+    "email": "emp_vente@gmail.com",
+    "motDePasse": "emp_vente",
+    "entityId": 1,
+    "roleId": 5
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Responsable Magasin",
+    "email": "resp_magasin@gmail.com",
+    "motDePasse": "resp_magasin",
+    "entityId": 1,
+    "roleId": 6
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Employe Magasin",
+    "email": "emp_magasin@gmail.com",
+    "motDePasse": "emp_magasin",
+    "entityId": 1,
+    "roleId": 7
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Responsable Finance",
+    "email": "resp_finance@gmail.com",
+    "motDePasse": "resp_finance",
+    "entityId": 1,
+    "roleId": 8
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Employe Finance",
+    "email": "emp_finance@gmail.com",
+    "motDePasse": "emp_finance",
+    "entityId": 1,
+    "roleId": 9
+}
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
+
+{
+    "nom": "Responsable Direction",
+    "email": "resp_direction@gmail.com",
+    "motDePasse": "resp_direction",
+    "entityId": 1,
+    "roleId": 10
+}
+
+### Magasin specific roles (added later in data.sql)
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
 
 {
     "nom": "Magasinier Reception",
     "email": "magrecept@gmail.com",
     "motDePasse": "magrecept",
     "entityId": 1,
-    "roleId":11
+    "roleId": 11
 }
 
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
 
 {
     "nom": "Magasinier Sortie",
     "email": "magsort@gmail.com",
     "motDePasse": "magsort",
     "entityId": 1,
-    "roleId":12
+    "roleId": 12
 }
+
+###
+
+POST {{baseUrl}}/register
+Content-Type: {{contentType}}
 
 {
     "nom": "Magasinier Inventaire",
     "email": "maginv@gmail.com",
     "motDePasse": "maginv",
     "entityId": 1,
-    "roleId":13
+    "roleId": 13
 }
 
-{
-    "nom": "Responsable Magasinier",
-    "email": "respmag@gmail.com",
-    "motDePasse": "respmag",
-    "entityId": 1,
-    "roleId":6
-}
-
-
-
+### Quick login tests
 
 POST {{baseUrl}}/login
 Content-Type: {{contentType}}
 
 {
-    "email":"admin@gmail.com",
-    "motDePasse":"admin"
+    "email": "admin@gmail.com",
+    "motDePasse": "admin"
 }
+
+###
+
+POST {{baseUrl}}/login
+Content-Type: {{contentType}}
+
+{
+    "email": "resp_vente@gmail.com",
+    "motDePasse": "resp_vente"
+}
+
+```
 

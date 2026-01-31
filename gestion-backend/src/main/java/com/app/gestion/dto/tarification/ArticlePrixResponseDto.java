@@ -19,5 +19,6 @@ public class ArticlePrixResponseDto {
     private String articleReference;
     private String entityName;
     private Double prix;
+    private Double prixVente; // Prix utilisé pour les ventes (peut être le même que prix)
     private LocalDateTime dateEntree;
 }

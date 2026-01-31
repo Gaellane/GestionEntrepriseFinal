@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import tarificationApi from '../../api/tarificationApi';
+import { tarificationApi } from '../../api/tarificationApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const TarificationList = () => {
@@ -69,9 +69,10 @@ const TarificationList = () => {
     };
 
     const formatCurrency = (value) => {
-        return new Intl.NumberFormat('fr-FR', {
+        return new Intl.NumberFormat('fr-MG', {
             style: 'currency',
-            currency: 'EUR'
+            currency: 'MGA',
+            currencyDisplay: 'symbol'
         }).format(value);
     };
 

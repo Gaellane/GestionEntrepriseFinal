@@ -42,8 +42,9 @@ public class ProformaVenteService {
     private final ConfigurationRepository configurationRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
     private final VenteService venteService; // Ajout pour transformation
+    private final TarificationService tarificationService; // Ajout pour récupérer les prix actuels
+    private final UtilisateurRepository utilisateurRepository; // Ajout pour récupérer l'utilisateur actuel
 
     @Transactional(readOnly = true)
     public Page<ProformaVenteResponseDto> getAllProformaVentes(Pageable pageable) {
@@ -81,12 +82,51 @@ public class ProformaVenteService {
         // Récupérer le taux de TVA
         Double tauxTVA = getTauxTVA();
 
-        // Créer le pro-forma
+        // Pré-calculer le prix total en récupérant les prix actuels des articles
+        Double prixTotalCalcule = 0.0;
+        List<ProformaVenteLigneDto> lignesAvecPrix = new ArrayList<>();
+        
+        for (ProformaVenteLigneDto ligneDto : requestDto.getLignes()) {
+            // Récupérer le prix actuel si le prix n'est pas fourni ou est 0
+            Double prixUnitaire = ligneDto.getPrixUnitaire();
+            if (prixUnitaire == null || prixUnitaire == 0.0) {
+                try {
+                    var prixActuel = tarificationService.getLatestPrixByArticleId(ligneDto.getArticleId());
+                    if (prixActuel != null && prixActuel.getPrixVente() != null) {
+                        prixUnitaire = prixActuel.getPrixVente();
+                    } else {
+                        prixUnitaire = 0.0;
+                    }
+                } catch (Exception e) {
+                    log.warn("Impossible de récupérer le prix actuel pour l'article {}: {}", ligneDto.getArticleId(), e.getMessage());
+                    prixUnitaire = ligneDto.getPrixUnitaire() != null ? ligneDto.getPrixUnitaire() : 0.0;
+                }
+            }
+            
+            // Créer une nouvelle ligne DTO avec le prix correct
+            ProformaVenteLigneDto ligneAvecPrix = ProformaVenteLigneDto.builder()
+                    .articleId(ligneDto.getArticleId())
+                    .quantite(ligneDto.getQuantite())
+                    .prixUnitaire(prixUnitaire)
+                    .remisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0)
+                    .remiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0)
+                    .build();
+            lignesAvecPrix.add(ligneAvecPrix);
+        }
+        
+        // Calculer le prix total basé sur les lignes avec prix
+        prixTotalCalcule = calculatePrixTotalFromDto(lignesAvecPrix, 
+                requestDto.getRemisePourcentage() != null ? requestDto.getRemisePourcentage() : 0.0,
+                requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0, 
+                tauxTVA);
+
+        // Créer le pro-forma avec le prix total calculé
         ProformaVente proforma = ProformaVente.builder()
                 .client(client)
                 .process(process)
                 .refe(reference)
                 .dateEntree(LocalDateTime.now())
+                .prixTotal(prixTotalCalcule)
                 .remisePourcentage(requestDto.getRemisePourcentage() != null ? requestDto.getRemisePourcentage() : 0.0)
                 .remiseFixe(requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0)
                 .build();
@@ -94,9 +134,9 @@ public class ProformaVenteService {
         // Sauvegarder d'abord le pro-forma pour obtenir l'ID
         ProformaVente savedProforma = proformaVenteRepository.save(proforma);
 
-        // Créer les lignes
+        // Créer les lignes en utilisant les prix déjà calculés
         List<ProformaVenteLigne> lignes = new ArrayList<>();
-        for (ProformaVenteLigneDto ligneDto : requestDto.getLignes()) {
+        for (ProformaVenteLigneDto ligneDto : lignesAvecPrix) {
             Article article = articleRepository.findById(ligneDto.getArticleId())
                     .orElseThrow(
                             () -> new RuntimeException("Article non trouvé avec l'id: " + ligneDto.getArticleId()));
@@ -106,8 +146,8 @@ public class ProformaVenteService {
                     .article(article)
                     .quantite(ligneDto.getQuantite())
                     .prixUnitaire(ligneDto.getPrixUnitaire())
-                    .remisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0)
-                    .remiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0)
+                    .remisePourcentage(ligneDto.getRemisePourcentage())
+                    .remiseFixe(ligneDto.getRemiseFixe())
                     .build();
 
             lignes.add(ligne);
@@ -115,20 +155,18 @@ public class ProformaVenteService {
 
         proformaVenteLigneRepository.saveAll(lignes);
 
-        // Calculer et mettre à jour le prix total
-        Double prixTotal = calculatePrixTotal(lignes, savedProforma.getRemisePourcentage(),
-                savedProforma.getRemiseFixe(), tauxTVA);
-        savedProforma.setPrixTotal(prixTotal);
-        savedProforma = proformaVenteRepository.save(savedProforma);
+        // Recharger le proforma avec ses lignes depuis la base de données
+        ProformaVente proformaAvecLignes = proformaVenteRepository.findById(savedProforma.getId())
+                .orElseThrow(() -> new RuntimeException("Erreur lors du rechargement du proforma"));
 
         // Journalisation avec détails si remise exceptionnelle
         String details = "Création du pro-forma vente";
         if (isRemiseExceptionnelle(requestDto.getRemisePourcentage(), currentUser)) {
             details += " - REMISE EXCEPTIONNELLE: " + requestDto.getRemisePourcentage() + "%";
         }
-        logAction("CREATE", null, savedProforma, details);
+        logAction("CREATE", null, proformaAvecLignes, details);
 
-        return mapToResponseDto(savedProforma);
+        return mapToResponseDto(proformaAvecLignes);
     }
 
     @Transactional
@@ -218,6 +256,47 @@ public class ProformaVenteService {
         // Calculer le montant brut total (avec remises par ligne)
         double montantNet = 0.0;
         for (ProformaVenteLigne ligne : lignes) {
+            double montantBrut = ligne.getQuantite() * ligne.getPrixUnitaire();
+
+            // Appliquer remise pourcentage ligne
+            double montantApresRemisePct = montantBrut;
+            if (ligne.getRemisePourcentage() != null && ligne.getRemisePourcentage() > 0) {
+                montantApresRemisePct = montantBrut * (1 - ligne.getRemisePourcentage() / 100);
+            }
+
+            // Appliquer remise fixe ligne
+            double montantNetLigne = montantApresRemisePct;
+            if (ligne.getRemiseFixe() != null && ligne.getRemiseFixe() > 0) {
+                montantNetLigne = Math.max(0, montantApresRemisePct - ligne.getRemiseFixe());
+            }
+
+            montantNet += montantNetLigne;
+        }
+
+        // Appliquer remise pourcentage globale
+        double montantApresRemiseGlobalePct = montantNet;
+        if (remisePourcentageGlobale != null && remisePourcentageGlobale > 0) {
+            montantApresRemiseGlobalePct = montantNet * (1 - remisePourcentageGlobale / 100);
+        }
+
+        // Appliquer remise fixe globale
+        double montantAvantTVA = montantApresRemiseGlobalePct;
+        if (remiseFixeGlobale != null && remiseFixeGlobale > 0) {
+            montantAvantTVA = Math.max(0, montantApresRemiseGlobalePct - remiseFixeGlobale);
+        }
+
+        // Appliquer TVA
+        double montantTVA = montantAvantTVA * (tauxTVA / 100);
+        double prixTotal = montantAvantTVA + montantTVA;
+
+        return Math.round(prixTotal * 100.0) / 100.0; // Arrondir à 2 décimales
+    }
+
+    private Double calculatePrixTotalFromDto(List<ProformaVenteLigneDto> lignes, Double remisePourcentageGlobale,
+            Double remiseFixeGlobale, Double tauxTVA) {
+        // Calculer le montant brut total (avec remises par ligne)
+        double montantNet = 0.0;
+        for (ProformaVenteLigneDto ligne : lignes) {
             double montantBrut = ligne.getQuantite() * ligne.getPrixUnitaire();
 
             // Appliquer remise pourcentage ligne
@@ -386,6 +465,7 @@ public class ProformaVenteService {
 
     private String convertProformaToJson(ProformaVente proforma) {
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> proformaMap = new HashMap<>();
             proformaMap.put("id", proforma.getId());
             proformaMap.put("refe", proforma.getRefe());
@@ -402,8 +482,35 @@ public class ProformaVenteService {
 
     private Utilisateur getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Utilisateur) {
-            return (Utilisateur) authentication.getPrincipal();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = null;
+            
+            // Cas 1: Le principal est directement un Utilisateur
+            if (authentication.getPrincipal() instanceof Utilisateur) {
+                return (Utilisateur) authentication.getPrincipal();
+            }
+            // Cas 2: Le principal est un UserDetails
+            else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails) {
+                username = ((org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal()).getUsername();
+            }
+            // Cas 3: Le principal est un String (nom d'utilisateur)
+            else if (authentication.getPrincipal() instanceof String) {
+                username = (String) authentication.getPrincipal();
+            }
+            // Cas 4: Utiliser getName() comme fallback
+            else {
+                username = authentication.getName();
+            }
+            
+            // Récupérer l'utilisateur depuis la base de données
+            if (username != null && !username.equals("anonymousUser")) {
+                try {
+                    return utilisateurRepository.findByEmailWithRole(username)
+                            .orElse(null);
+                } catch (Exception e) {
+                    log.error("Erreur lors de la récupération de l'utilisateur {}: {}", username, e.getMessage());
+                }
+            }
         }
         return null;
     }

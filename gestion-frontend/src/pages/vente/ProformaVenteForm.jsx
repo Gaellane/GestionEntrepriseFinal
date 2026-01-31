@@ -62,12 +62,29 @@ const ProformaVenteForm = () => {
     const loadArticlePrice = async (articleId, ligneIndex) => {
         try {
             const prixData = await tarificationApi.getLatestPrixByArticleId(articleId);
-            if (prixData) {
-                updateLigne(ligneIndex, 'prixUnitaire', prixData.prixVente || 0);
+            if (prixData && prixData.prixVente !== null && prixData.prixVente !== undefined) {
+                updateLignePrix(ligneIndex, prixData.prixVente);
+            } else {
+                // Aucun prix trouvé, mettre à 0
+                updateLignePrix(ligneIndex, 0);
             }
         } catch (err) {
             console.error('Erreur lors du chargement du prix:', err);
+            // En cas d'erreur, mettre le prix à 0
+            updateLignePrix(ligneIndex, 0);
         }
+    };
+
+    // Fonction helper pour mettre à jour uniquement le prix
+    const updateLignePrix = (index, prix) => {
+        setFormData(prev => {
+            const newLignes = [...prev.lignes];
+            newLignes[index] = {
+                ...newLignes[index],
+                prixUnitaire: prix
+            };
+            return { ...prev, lignes: newLignes };
+        });
     };
 
     // Ajouter une ligne
@@ -103,6 +120,12 @@ const ProformaVenteForm = () => {
     const updateLigne = (index, field, value) => {
         setFormData(prev => {
             const newLignes = [...prev.lignes];
+            
+            // Le prix unitaire n'est plus modifiable manuellement
+            if (field === 'prixUnitaire') {
+                return prev;
+            }
+            
             newLignes[index] = {
                 ...newLignes[index],
                 [field]: field === 'articleId' ? value : parseFloat(value) || 0
@@ -288,10 +311,17 @@ const ProformaVenteForm = () => {
                                                         step="0.01"
                                                         min="0"
                                                         value={ligne.prixUnitaire}
-                                                        onChange={(e) => updateLigne(index, 'prixUnitaire', e.target.value)}
-                                                        className="w-24 px-2 py-1 border border-gray-300 rounded text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        required
+                                                        readOnly
+                                                        className="w-24 px-2 py-1 border border-gray-200 rounded text-right bg-gray-100 cursor-not-allowed"
+                                                        title="Prix automatique basé sur le tarif actuel de l'article"
+                                                        placeholder="Prix auto"
                                                     />
+                                                    {ligne.articleId && ligne.prixUnitaire > 0 && (
+                                                        <div className="text-xs text-green-600 mt-1">Prix actuel</div>
+                                                    )}
+                                                    {ligne.articleId && ligne.prixUnitaire === 0 && (
+                                                        <div className="text-xs text-orange-500 mt-1">Aucun prix</div>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-2 border-b">
                                                     <input
