@@ -16,6 +16,12 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   HomeIcon,
+  PlusIcon,
+  DocumentDuplicateIcon,
+  AdjustmentsHorizontalIcon,
+  ShieldCheckIcon,
+  ClipboardDocumentCheckIcon,
+  CheckBadgeIcon
   CurrencyDollarIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
@@ -34,6 +40,21 @@ export const SIDEBAR_CONFIG = {
           path: '/home',
           icon: <DocumentTextIcon className="w-4 h-4" />,
           alwaysVisible: true,
+        } ,
+      ]
+    },
+    {
+      id: 'articles',
+      label: 'Articles',
+      icon: <CubeIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
+      subItems: [
+        {
+          id: 'liste-articles',
+          label: 'Liste',
+          path: '/articles',
+          icon: <DocumentTextIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
         }
       ]
     },
@@ -44,11 +65,12 @@ export const SIDEBAR_CONFIG = {
       roles: [ROLES.ADMIN],
       subItems: [
         {
-          id: 'proforma-achats',
-          label: 'Proforma',
-          path: '/achats/proforma',
-          icon: <DocumentTextIcon className="w-4 h-4" />,
+          id: 'saisie-achat',
+          label: 'Saisie',
+          path: '/achats/saisie',
+          icon: <PlusIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+
         },
         {
           id: 'demandes-achats',
@@ -57,6 +79,13 @@ export const SIDEBAR_CONFIG = {
           icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
 
+        },
+        {
+          id: 'proforma-achats',
+          label: 'Proforma',
+          path: '/achats/proforma',
+          icon: <DocumentTextIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN],
         },
         {
           id: 'fournisseurs',
@@ -72,6 +101,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Vente',
       icon: <ChartBarIcon className="w-5 h-5" />,
       permission: 'view_sales',
+      alwaysVisible : true,
       subItems: [
         {
           id: 'clients',
@@ -115,6 +145,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Livraison',
       icon: <TruckIcon className="w-5 h-5" />,
       permission: 'view_deliveries',
+
       subItems: [
         {
           id: 'liste-livraisons',
@@ -271,12 +302,41 @@ export const SIDEBAR_CONFIG = {
           icon: <ListBulletIcon className="w-4 h-4" />
         }
       ]
+    },
+    {
+      id: 'administration',
+      label: 'Administration',
+      icon: <ShieldCheckIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+      subItems: [
+        {
+          id: 'audit-logs',
+          label: 'Logs d\'audit',
+          path: '/admin/audit-logs',
+          icon: <ClipboardDocumentCheckIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-attribution',
+          label: 'Gestion de roles',
+          path: '/admin/roles-attribution',
+          icon: <UserGroupIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        },
+        {
+          id: 'roles-validation',
+          label: 'Validation roles',
+          path: '/admin/roles-validation',
+          icon: <CheckBadgeIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN,ROLES.ADMINSYS],
+        }
+      ]
     }, 
   ]
 };
 
 
-export const canAccessRoute = (routePath, user) => {
+export const canAccessRoute = async ({routePath, user}) => {
   if (!user || !user.role) return false;
 
   // Trouver la route dans la configuration

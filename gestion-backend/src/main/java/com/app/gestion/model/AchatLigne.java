@@ -28,7 +28,7 @@ public class AchatLigne {
     @Column(name = "quantite", nullable = false)
     private Double quantite;
 
-    @Column(name = "prix_unitaire", nullable = false)
+    @Column(name = "prix_unitaire")
     private Double prixUnitaire;
 
     @Column(name = "prix_unitaire_estime", nullable = false)

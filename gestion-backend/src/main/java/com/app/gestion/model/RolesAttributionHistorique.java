@@ -27,6 +27,11 @@ public class RolesAttributionHistorique {
     @lombok.ToString.Exclude
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "process_id")
+    @lombok.ToString.Exclude
+    private RolesAttributionProcess process;
+
     @Column(name = "date_entree", nullable = false)
     private LocalDateTime dateEntree;
 }
