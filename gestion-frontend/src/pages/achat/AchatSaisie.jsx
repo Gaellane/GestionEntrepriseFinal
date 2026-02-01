@@ -169,8 +169,22 @@ const AchatSaisie = () => {
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
       
-      const result = await response.json();
-      console.log('Achat créé avec succès:', result);
+      // Read response as text first to debug
+      const responseText = await response.text();
+      console.log('Response brute:', responseText);
+      console.log('Response length:', responseText.length);
+      
+      // Try to parse the JSON
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('Achat créé avec succès:', result);
+      } catch (jsonError) {
+        console.error('Erreur de parsing JSON:', jsonError);
+        console.error('Position de l\'erreur:', jsonError.message);
+        console.error('Extrait autour de la position 20449:', responseText.substring(20440, 20460));
+        throw new Error('La réponse du serveur contient du JSON invalide');
+      }
       
       setSuccess(true);
       

@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../pages/auth/Login";
-import ProformaAchatSaisie from "../pages/achat/ProformaAchatSaisie";
 
 import MvtStockSaisie from "../pages/stock/MvtStockSaisie";
 import ProtectedRoute from "./ProtectedRoutes";
@@ -19,7 +18,13 @@ import AchatFiche from "../pages/achat/AchatFiche";
 import AuditLogs from "../pages/admin/AuditLogs";
 import RolesAssignment from "../pages/admin/RolesAssignment";
 import RolesValidation from "../pages/admin/RolesValidation";
+import DemandeProforma from "../pages/achat/DemandeProforma";
+import ProformaSaisie from "../pages/achat/ProformaSaisie";
+import LivraisonSaisie from "../pages/achat/LivraisonSaisie";
+import ReceptionSaisie from "../pages/achat/ReceptionSaisie";
+import AchatKpiDashboard from "../pages/achat/AchatKpiDashboard";
 
+import { TruckIcon } from "@heroicons/react/24/solid";
 //achat , articele 
 import ListeArticle from "../pages/article/ListeArticle";
 
@@ -28,8 +33,8 @@ const AppRoutes = () => {
         <Routes>
 
           <Route path='/' element={<Login />} />
-          <Route path='/achat' element={<ProformaAchatSaisie />} />
-          <Route path='/demande' element={<ProformaAchatSaisie />} />
+          <Route path='/achat' element={<ProformaSaisie />} />
+          <Route path='/demande' element={<ProformaSaisie />} />
 
           {/* Stock group */}
           <Route path='/stock' element={<MvtStockSaisie />} />
@@ -39,8 +44,7 @@ const AppRoutes = () => {
           <Route path="/unauthorized" element={<Unauthorized />} />          
           <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
             <Route path="/home" element={<HomePage />} />          
-            <Route path="/achats/proforma" element={<ProformaAchatSaisie />} />
-            <Route path="/vente/proforma" element={<ProformaAchatSaisie />} />
+          
 
             <Route path="/articles">
               <Route index element={<ListeArticle />} />
@@ -49,6 +53,11 @@ const AppRoutes = () => {
               <Route path="saisie" element={<AchatSaisie />} />
               <Route path="demandes" element={<AchatList />} />
               <Route path="fiche/:id" element={<AchatFiche />} />
+              <Route path="commande/saisie/:id" element={<DemandeProforma />} />
+              <Route path="proforma/saisie/:achatId/:fournisseurId" element={<ProformaSaisie />} />
+              <Route path="livraison/saisie/:achatId" element={<LivraisonSaisie />} />
+              <Route path="livraison/reception/:achatId" element={<ReceptionSaisie />} />
+              <Route path="kpi" element={<AchatKpiDashboard />} />
             </Route>
 
             <Route path="/stock/inventaires" element={<DemandeInventaires/>} />

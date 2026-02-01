@@ -14,6 +14,7 @@ public class AchatCPL {
     private LocalDate dateEffective;
     private AchatProcessDTO achatProcess;
     private List<AchatLigneDTO> achatLignes;
+    private List<Integer> fournisseurIds;
 
     public static AchatCPL mapToDTO(com.app.gestion.model.Achat achat) {
         AchatCPL dto = new AchatCPL();
@@ -32,6 +33,11 @@ public class AchatCPL {
             .collect(Collectors.toList());
             dto.setAchatLignes(ligneDTOs);
         }
+        List<Integer> fournisseurIds = achat.getCommandes().stream()
+                .map(commande -> commande.getFournisseur().getId())
+                .distinct()
+                .collect(Collectors.toList());
+        dto.setFournisseurIds(fournisseurIds);
         return dto;
     }
 }
