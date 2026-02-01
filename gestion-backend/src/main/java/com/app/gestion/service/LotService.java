@@ -62,23 +62,15 @@ public class LotService {
 
     @Transactional
     public List<Lot> transfererLots(Integer articleId, Integer depotSourceId, Integer depotDestId, Double quantite, Integer raisonId, String description,LocalDateTime dateTransfert, Integer userId) throws Exception {
-        List<Lot> lots=new ArrayList<>();
-        List<Lot> candidateLots = getLotsByMethod(articleId, depotSourceId, quantite, dateTransfert);
-        double totalAvailable = candidateLots.stream().mapToDouble(l -> l.getQuantiteRestante()).sum();
-        if (totalAvailable < quantite) {
-            throw new InsufficientQuantityException("Quantité insuffisante en stock");
-        }
-
-        for (Lot lot : candidateLots) {
-            if (quantite <= 0) {
-                break;
-            }
-            Double qteToTransferer = Math.min(lot.getQuantiteRestante(), quantite);
-            lots.add(transfererLot(lot.getId(), depotSourceId, depotDestId, qteToTransferer, raisonId, description, dateTransfert, userId));
-            quantite -= qteToTransferer;
+        List<Lot> lots= sortirLots(articleId, quantite, raisonId, description, dateTransfert, userId);
+        List<Lot> lotsEntres=new ArrayList<>();
+        for(Lot lotSorti : lots){
+            // Use the unit price from the lot being transferred for the incoming lot
+            Double prix = lotSorti != null ? lotSorti.getPrixUnitaire() : null;
+            lotsEntres.add(entrerLot(articleId, depotDestId, lotSorti.getQuantite(), prix, raisonId, description, dateTransfert, lotSorti.getDatePeremption(), userId));
         }
         
-        return lots;
+        return lotsEntres;
     }
 
     @Transactional

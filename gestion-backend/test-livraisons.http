@@ -1,0 +1,272 @@
+### ==============================================
+### Tests des Livraisons (4.2 - 4.3)
+### ==============================================
+
+### Variables
+@baseUrl = http://localhost:8080/api
+@token = YOUR_JWT_TOKEN_HERE
+@venteId = 1
+@livraisonId = 1
+@livraisonLigneId = 1
+@depotId = 1
+
+### ==============================================
+### 4.2 - Création de Livraison
+### ==============================================
+
+### 4.2.1 - Lister les ventes à préparer (Confirmées)
+# Retourne toutes les ventes avec process_id = 60 (Confirmée)
+GET {{baseUrl}}/livraisons/ventes-a-preparer
+Authorization: Bearer {{token}}
+
+### 4.2.2 - Créer une livraison complète (toutes les quantités)
+# Copie toutes les lignes de la vente vers la livraison
+# État initial: En préparation (10)
+# État vente: Confirmée (60) → En préparation (70)
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": {{venteId}}
+}
+
+### 4.2.3 - Créer une livraison partielle (quantités modifiées)
+# Permet de livrer moins que la quantité commandée
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": {{venteId}},
+  "lignes": [
+    {
+      "articleId": 1,
+      "quantite": 5.0
+    },
+    {
+      "articleId": 2,
+      "quantite": 20.0
+    }
+  ]
+}
+
+### 4.2.4 - Erreur: Créer livraison pour vente non Confirmée
+# Devrait retourner erreur si vente.process_id != 60
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": {{venteId}}
+}
+
+### 4.2.5 - Erreur: Quantité de livraison > quantité de vente
+# Devrait retourner erreur
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": {{venteId}},
+  "lignes": [
+    {
+      "articleId": 1,
+      "quantite": 1000.0
+    }
+  ]
+}
+
+### ==============================================
+### 4.3 - Préparation (Picking)
+### ==============================================
+
+### 4.3.1 - Interface de préparation: afficher livraison
+# Affiche toutes les lignes avec quantités à préparer
+GET {{baseUrl}}/livraisons/{{livraisonId}}/preparation?depotId={{depotId}}
+Authorization: Bearer {{token}}
+
+### 4.3.2 - Obtenir lots disponibles FIFO (First In First Out)
+# Ordre par date d'arrivée (plus ancien en premier)
+# Exclut les lots expirés
+GET {{baseUrl}}/livraisons/lignes/{{livraisonLigneId}}/lots-disponibles?depotId={{depotId}}&methode=FIFO
+Authorization: Bearer {{token}}
+
+### 4.3.3 - Obtenir lots disponibles FEFO (First Expired First Out)
+# Ordre par date de péremption (expire bientôt en premier)
+# Pour produits périssables
+GET {{baseUrl}}/livraisons/lignes/{{livraisonLigneId}}/lots-disponibles?depotId={{depotId}}&methode=FEFO
+Authorization: Bearer {{token}}
+
+### 4.3.4 - Obtenir lots disponibles (méthode auto)
+# Utilise FEFO si article périssable, sinon FIFO
+GET {{baseUrl}}/livraisons/lignes/{{livraisonLigneId}}/lots-disponibles?depotId={{depotId}}
+Authorization: Bearer {{token}}
+
+### ==============================================
+### Consultation de Livraisons
+### ==============================================
+
+### Lister toutes les livraisons
+GET {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+
+### Consulter une livraison par ID
+GET {{baseUrl}}/livraisons/{{livraisonId}}
+Authorization: Bearer {{token}}
+
+### ==============================================
+### Workflow Complet - Scénario de Test
+### ==============================================
+
+### ÉTAPE 1: Créer et valider une vente (état → Confirmée)
+# @name createVente
+POST {{baseUrl}}/ventes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clientId": 1,
+  "dateEffective": "2026-01-25",
+  "dateLivraison": "2026-02-01",
+  "locationLivraison": "Test Livraison",
+  "lignes": [
+    {
+      "articleId": 1,
+      "quantite": 10.0,
+      "prixUnitaire": 500.0
+    },
+    {
+      "articleId": 2,
+      "quantite": 50.0,
+      "prixUnitaire": 20.0
+    }
+  ]
+}
+
+### ÉTAPE 2: Valider la vente (Brouillon → Confirmée)
+POST {{baseUrl}}/ventes/{{createVente.response.body.id}}/valider
+Authorization: Bearer {{token}}
+
+### ÉTAPE 3: Vérifier que la vente apparaît dans les ventes à préparer
+GET {{baseUrl}}/livraisons/ventes-a-preparer
+Authorization: Bearer {{token}}
+
+### ÉTAPE 4: Créer une livraison pour cette vente
+# @name createLivraison
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": {{createVente.response.body.id}}
+}
+
+### ÉTAPE 5: Afficher l'interface de préparation
+GET {{baseUrl}}/livraisons/{{createLivraison.response.body.id}}/preparation?depotId=1
+Authorization: Bearer {{token}}
+
+### ÉTAPE 6: Pour chaque ligne, obtenir les lots disponibles
+# Utiliser les IDs des lignes retournées à l'étape 5
+GET {{baseUrl}}/livraisons/lignes/1/lots-disponibles?depotId=1&methode=FIFO
+Authorization: Bearer {{token}}
+
+### ==============================================
+### Tests Avancés - Scénarios Métier
+### ==============================================
+
+### Scénario A: Livraison partielle
+# Cas: Client accepte seulement une partie de la commande
+POST {{baseUrl}}/livraisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "venteId": 5,
+  "lignes": [
+    {
+      "articleId": 1,
+      "quantite": 3.0
+    }
+  ]
+}
+
+### Scénario B: Produits périssables avec FEFO
+# Cas: Articles avec dates de péremption
+GET {{baseUrl}}/livraisons/lignes/2/lots-disponibles?depotId=1&methode=FEFO
+Authorization: Bearer {{token}}
+
+### Scénario C: Vérifier lots expirés exclus
+# Les lots avec date_peremption < NOW() ne doivent pas apparaître
+GET {{baseUrl}}/livraisons/lignes/3/lots-disponibles?depotId=1&methode=FIFO
+Authorization: Bearer {{token}}
+
+### Scénario D: Multi-dépôts
+# Chercher lots dans un dépôt spécifique
+GET {{baseUrl}}/livraisons/lignes/4/lots-disponibles?depotId=2&methode=FIFO
+Authorization: Bearer {{token}}
+
+### ==============================================
+### Vérifications Base de Données
+### ==============================================
+#
+# Après création de livraison, vérifier:
+#
+# 1. Table livraison_ventes:
+#    SELECT * FROM livraison_ventes WHERE vente_id = {venteId};
+#    - refe unique (LIV-YYYY-MM-DD-XXXXX)
+#    - process_id = 10 (En préparation)
+#
+# 2. Table livraison_vente_lignes:
+#    SELECT * FROM livraison_vente_lignes WHERE livraison_id = {livraisonId};
+#    - Lignes copiées depuis vente_lignes
+#    - Quantités respectées (ou modifiées si partielle)
+#
+# 3. Table livraison_vente_historiques:
+#    SELECT * FROM livraison_vente_historiques WHERE livraison_id = {livraisonId};
+#    - Entrée avec process_id = 10
+#
+# 4. Table ventes:
+#    SELECT * FROM ventes WHERE id = {venteId};
+#    - process_id passé de 60 (Confirmée) à 70 (En préparation)
+#
+# 5. Lots disponibles (FIFO):
+#    SELECT * FROM lots 
+#    WHERE article_id = {articleId} 
+#      AND depot_id = {depotId}
+#      AND quantite_restante > 0
+#      AND (date_peremption IS NULL OR date_peremption > NOW())
+#    ORDER BY date_arrivee ASC;
+#
+# 6. Lots disponibles (FEFO):
+#    SELECT * FROM lots 
+#    WHERE article_id = {articleId} 
+#      AND depot_id = {depotId}
+#      AND quantite_restante > 0
+#      AND date_peremption IS NOT NULL
+#      AND date_peremption > NOW()
+#    ORDER BY date_peremption ASC;
+#
+### ==============================================
+
+### ==============================================
+### Notes d'utilisation
+### ==============================================
+#
+# 1. Remplacer @token par un JWT valide (rôle RESP_MAGASIN ou EMP_MAGASIN)
+# 2. S'assurer que:
+#    - Des ventes Confirmées (process_id=60) existent
+#    - Des articles avec stock (lots) existent
+#    - Des dépôts sont configurés
+# 3. FIFO vs FEFO:
+#    - FIFO: Ordre chronologique d'arrivée (défaut)
+#    - FEFO: Ordre de péremption (produits périssables)
+#    - Auto: Détection automatique selon présence date_peremption
+# 4. Livraison partielle:
+#    - Spécifier uniquement les articles/quantités à livrer
+#    - Utile pour ruptures de stock ou annulations partielles client
+# 5. Lots expirés:
+#    - Automatiquement exclus des résultats
+#    - Vérifier date_peremption > NOW()
+#
+### ==============================================

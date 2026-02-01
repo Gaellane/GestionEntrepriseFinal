@@ -75,8 +75,13 @@ INSERT INTO depots(depot_name) VALUES
 INSERT INTO entity_depots(entity_id, depot_id) VALUES
 (1,1) , (1,2);
 
--- INSERT INTO utilisateurs (nom,email,mot_de_passe,role_id,entity_id) VALUES
--- ('ADMIN' , 'admin@gmail.com' , 'admin' , 1 ,1 );
+-- Configurations pour les remises et autres paramètres
+INSERT INTO configurations(config_key, config_value, description) VALUES 
+('TVA', '20', 'Taux de TVA en pourcentage'),
+('REMISE_MAX_COMMERCIAL', '10', 'Plafond de remise maximum pour les commerciaux (en %)'),
+('REMISE_MAX_RESPONSABLE', '25', 'Plafond de remise maximum pour les responsables (en %)');
+
+
 
 
 INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
