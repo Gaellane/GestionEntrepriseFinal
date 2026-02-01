@@ -220,12 +220,22 @@ const AchatList = () => {
           labelColor: "bg-purple-100 text-purple-800",
           showCancel: false
         };
+      case 25 :
+        return {
+          id: 25,
+          buttonText: "Lancer Commande",
+          buttonColor: "from-orange-500 to-amber-600",
+          buttonIcon: TruckIcon,
+          label: "Validé",
+          labelColor: "bg-purple-100 text-purple-800",
+          showCancel: false
+        };
       case 31:
         return {
           id: 31,
           buttonText: "Réception",
-          buttonColor: "from-cyan-500 to-blue-600",
-          buttonIcon: ArchiveBoxIcon,
+          buttonColor: null,
+          buttonIcon: null,
           label: "En Commande",
           labelColor: "bg-orange-100 text-orange-800",
           showCancel: false
@@ -236,7 +246,27 @@ const AchatList = () => {
           buttonText: null,
           buttonColor: "",
           buttonIcon: null,
-          label: "Réceptionné",
+          label: "Livrer",
+          labelColor: "bg-cyan-100 text-cyan-800",
+          showCancel: false
+        };
+      case 45:
+        return {
+          id: 45,
+          buttonText: null,
+          buttonColor: "",
+          buttonIcon: null,
+          label: "CLoturer",
+          labelColor: "bg-cyan-100 text-cyan-800",
+          showCancel: false
+        };
+      case 61:
+        return {
+          id: 41,
+          buttonText: null,
+          buttonColor: "",
+          buttonIcon: null,
+          label: "Livrer",
           labelColor: "bg-cyan-100 text-cyan-800",
           showCancel: false
         };
@@ -278,6 +308,9 @@ const AchatList = () => {
         }
         break;
       case 21 :
+        navigate(`/achats/commande/saisie/${achatId}`);
+        break;
+      case 25 :
         navigate(`/achats/commande/saisie/${achatId}`);
         break;
       default:

@@ -424,7 +424,7 @@ CREATE TABLE inventaire_process (
 
 -- Seed processes for inventories
 INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
-('Création de l''inventaire', 'CRE', 1),
+('Creation de l''inventaire', 'CRE', 1),
 ('Validation inventaire', 'VAL', 2),
 ('Rejet inventaire', 'REJ', 3),
 ('Clôture inventaire', 'CLO', 4),
@@ -498,10 +498,17 @@ CREATE TABLE roles_attribution_process (
 );
 
 INSERT INTO roles_attribution_process (process_name, abreviation, valeur) VALUES
-('Création de l''attribution de role', 'CRE', 1),
+('Creation de l attribution de role', 'CRE', 1),
 ('Validation attribution de role', 'VAL', 2),
 ('Rejet attribution de role', 'REJ', 3),
 ('Annulation attribution de role', 'ANN', 4);
 
 ALTER TABLE roles_attribution_historiques ADD COLUMN process_id INTEGER REFERENCES roles_attribution_process(id) ;
 
+
+CREATE TABLE commande (
+    id SERIAL PRIMARY KEY ,
+    achat_id INTEGER NOT NULL REFERENCES achats(id),
+    fournisseur_id INTEGER NOT NULL REFERENCES fournisseurs(id),
+    date_commande TIMESTAMP NOT NULL
+) ;

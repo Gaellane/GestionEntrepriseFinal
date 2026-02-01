@@ -4,10 +4,16 @@ INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES
 ('VALIDER MAGASINIER' , 'VM' ,11),
 ('VALIDER COMPTABLE' , 'VC' ,21),
 ('EN COMMANDE' , 'EC' ,31),
-('RECEPTIONNER' , 'RE' ,41),
+('LIVRER' , 'LI' ,41),
 ('VALIDER FACTURE' , 'VF' ,51),
 ('CLOTURER' , 'CL' ,61) ,
 ('ANNULER' , 'AN' ,0);
+
+INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES 
+('DEMANDE PROFORMA' , 'DP' ,25);
+INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES 
+('RECEPTIONNER' , 'RE' ,45);
+
 -- Insertion des fournisseurs
 INSERT INTO fournisseurs (fournisseur_nom , contact , adresse , coordonnee_bancaire) VALUES
 ('Fournisseur A' , '0310031102' , '123 Rue Principale, Ville A' , 'FR76 1234 5678 9012 3456 7890 123'),
@@ -40,3 +46,15 @@ INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id
 ('REF013', 'Farine ble', 'FIFO', 'Farine de ble T45 sac 1kg', 1, 2),
 ('REF014', 'Desinfectant', 'FIFO', 'Desinfectant surfaces 750ml', 2, 3),
 ('REF015', 'Agrapheuse', 'CMUP', 'Agrapheuse bureau standard', 3, 4);
+
+-- Insertion des process bon commande
+INSERT INTO bon_commande_processes (process_name , abreviation , valeur) VALUES 
+('CREER' , 'CR' ,1),
+('VALIDER' , 'VA' ,11),
+('EN COMMANDE' , 'EC' ,21),
+('LIVRER' , 'LI' ,41),
+('CLOTURER' , 'CL' ,61) ,
+('ANNULER' , 'AN' ,0);
+
+INSERT INTO bon_commande_processes (process_name , abreviation , valeur) VALUES 
+('RECEPTIONNER' , 'RE' ,45);
