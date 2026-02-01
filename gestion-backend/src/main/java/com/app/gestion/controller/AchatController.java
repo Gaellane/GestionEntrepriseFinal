@@ -58,11 +58,14 @@ public class AchatController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('RESP_ACHAT','ADMIN')")
-    public ResponseEntity<Achat> createAchat(@RequestBody AchatCreateDTO achatDTO) {
+    public ResponseEntity<?> createAchat(@RequestBody AchatCreateDTO achatDTO) {
         System.out.println("Creating achat with data: " + achatDTO.toString());
 
         Achat createdAchat = achatService.createAchat(achatDTO);
-        return ResponseEntity.ok(createdAchat);
+        AchatDTO retour = new AchatDTO();
+        retour.setId(createdAchat.getId());
+        retour.setRefe(createdAchat.getRefe());
+        return ResponseEntity.ok(retour);
     }
 
     @GetMapping

@@ -138,6 +138,9 @@ public class AchatService {
 
     @Autowired
     private DepotRepository depotRepository;
+    @Autowired 
+    private CaisseMouvementService caisseMouvementService;
+
 
     public Achat createAchat(AchatCreateDTO achatDTO) {
         LocalDateTime now = LocalDateTime.now();
@@ -264,6 +267,16 @@ public class AchatService {
         if(achat.getProcess().getValeur() != 11){
             throw new RuntimeException("Achat is not in a valid state for financier validation");
         }
+
+        // verification de fonds 
+        double totalMontant = achat.getAchatLignes().stream()
+            .mapToDouble(ligne -> ligne.getQuantite() * ligne.getPrixUnitaire())
+            .sum();
+
+        if(!caisseMouvementService.estDepensePossible(totalMontant)) 
+        {
+            throw new RuntimeException("Fond de caisse insuffisant pour l'achat a valider");
+        }   
 
         AchatProcess validerProcess = achatProcessRepository.findByValeur(21).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 21 not found"));
         AchatHistorique historique = new AchatHistorique();
