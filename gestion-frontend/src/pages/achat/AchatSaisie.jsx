@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getArticles } from '../../api/articleApi';
+import { getAllArticlesNoPagination } from '../../api/articleApi';
 import { sendAchat } from '../../api/achatApi';
 import {
   PlusIcon,
@@ -23,13 +23,13 @@ const AchatSaisie = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  
+
   // Form data - seulement dateEffective et lignes
   const [formData, setFormData] = useState({
     dateEffective: new Date().toISOString().split('T')[0],
     lignes: []
   });
-  
+
   // Current line being added
   const [currentLigne, setCurrentLigne] = useState({
     articleId: '',
@@ -42,13 +42,22 @@ const AchatSaisie = () => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
-        const response = await getArticles();
-        const data = await response.json();
-        setArticles(data || []);
-        setFilteredArticles(data || []);
+        // getAllArticlesNoPagination returns { success, message, data }
+        const response = await getAllArticlesNoPagination();
+
+        console.log('Response complète:', response);
+
+        // Extract data array from response
+        const articlesArray = Array.isArray(response?.data) ? response.data : [];
+
+        console.log('Articles chargés:', articlesArray.length, 'articles');
+        setArticles(articlesArray);
+        setFilteredArticles(articlesArray);
       } catch (error) {
         console.error('Error fetching articles:', error);
         setError('Erreur lors du chargement des articles');
+        setArticles([]);
+        setFilteredArticles([]);
       } finally {
         setLoading(false);
       }
@@ -59,6 +68,11 @@ const AchatSaisie = () => {
 
   // Filter articles based on search
   useEffect(() => {
+    if (!Array.isArray(articles)) {
+      setFilteredArticles([]);
+      return;
+    }
+
     if (searchArticle.trim() === '') {
       setFilteredArticles(articles);
     } else {
@@ -93,9 +107,9 @@ const AchatSaisie = () => {
   const ajouterLigne = () => {
     if (currentLigne.articleId && currentLigne.quantite && currentLigne.prixUnitaireEstime) {
       const article = articles.find(a => a.id === parseInt(currentLigne.articleId));
-      
+
       if (!article) return;
-      
+
       const nouvelleLigne = {
         id: Date.now(),
         articleId: parseInt(currentLigne.articleId),
@@ -103,12 +117,12 @@ const AchatSaisie = () => {
         quantite: parseFloat(currentLigne.quantite),
         prixUnitaireEstime: parseFloat(currentLigne.prixUnitaireEstime)
       };
-      
+
       setFormData(prev => ({
         ...prev,
         lignes: [...prev.lignes, nouvelleLigne]
       }));
-      
+
       // Reset current line
       setCurrentLigne({
         articleId: '',
@@ -140,14 +154,14 @@ const AchatSaisie = () => {
     setSubmitting(true);
     setError(null);
     setSuccess(false);
-    
+
     // Validation
     if (formData.lignes.length === 0) {
       setError('Veuillez ajouter au moins un article');
       setSubmitting(false);
       return;
     }
-    
+
     // Préparer les données à envoyer - Format CORRECT
     const achatData = {
       dateEffective: formData.dateEffective,
@@ -157,23 +171,23 @@ const AchatSaisie = () => {
         prixUnitaireEstime: ligne.prixUnitaireEstime
       }))
     };
-    
+
     console.log('Données à envoyer:', JSON.stringify(achatData, null, 2));
-    
+
     try {
       const response = await sendAchat(achatData);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Erreur API:', errorText);
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
-      
+
       // Read response as text first to debug
       const responseText = await response.text();
       console.log('Response brute:', responseText);
       console.log('Response length:', responseText.length);
-      
+
       // Try to parse the JSON
       let result;
       try {
@@ -185,9 +199,9 @@ const AchatSaisie = () => {
         console.error('Extrait autour de la position 20449:', responseText.substring(20440, 20460));
         throw new Error('La réponse du serveur contient du JSON invalide');
       }
-      
+
       setSuccess(true);
-      
+
       // Reset form after 2 seconds
       setTimeout(() => {
         setFormData({
@@ -198,7 +212,7 @@ const AchatSaisie = () => {
         // Option: rediriger vers la liste des achats
         // window.location.href = '/achats';
       }, 2000);
-      
+
     } catch (error) {
       console.error('Error:', error);
       setError(`Erreur lors de la création de l'achat: ${error.message}`);
@@ -277,7 +291,7 @@ const AchatSaisie = () => {
                   <DocumentTextIcon className="w-5 h-5 mr-2 text-emerald-600" />
                   Informations Achat
                 </h2>
-                
+
                 <div className="space-y-4">
                   {/* Date Effective */}
                   <div>
@@ -305,7 +319,7 @@ const AchatSaisie = () => {
                         <span className="text-sm text-gray-600">Nombre d'articles :</span>
                         <span className="font-medium text-gray-900">{formData.lignes.length}</span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Quantité totale :</span>
                         <span className="font-medium text-gray-900">
@@ -345,7 +359,7 @@ const AchatSaisie = () => {
                 {/* Add Line Form */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-medium text-gray-800 mb-4">Ajouter un article</h3>
-                  
+
                   {/* Article Search */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -372,11 +386,11 @@ const AchatSaisie = () => {
                       name="articleId"
                       value={currentLigne.articleId}
                       onChange={handleLigneChange}
-                      
+
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     >
                       <option value="">Sélectionner un article dans la liste...</option>
-                      {filteredArticles.map(article => (
+                      {Array.isArray(filteredArticles) && filteredArticles.map(article => (
                         <option key={article.id} value={article.id}>
                           {article.refe} - {article.articleNom}
                         </option>
@@ -430,7 +444,7 @@ const AchatSaisie = () => {
                           onChange={handleLigneChange}
                           step="0.01"
                           min="0.01"
-                          
+
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                           placeholder="0.00"
                         />
@@ -450,7 +464,7 @@ const AchatSaisie = () => {
                           onChange={handleLigneChange}
                           step="0.01"
                           min="0.01"
-                          
+
                           className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                           placeholder="0.00"
                         />
@@ -464,11 +478,10 @@ const AchatSaisie = () => {
                       type="button"
                       onClick={ajouterLigne}
                       disabled={!currentLigne.articleId || !currentLigne.quantite || !currentLigne.prixUnitaireEstime}
-                      className={`w-full px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 ${
-                        currentLigne.articleId && currentLigne.quantite && currentLigne.prixUnitaireEstime
-                          ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 hover:shadow-lg'
-                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      } transition-all`}
+                      className={`w-full px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 ${currentLigne.articleId && currentLigne.quantite && currentLigne.prixUnitaireEstime
+                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 hover:shadow-lg'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        } transition-all`}
                     >
                       <PlusIcon className="w-5 h-5" />
                       <span>Ajouter l'article</span>
@@ -588,15 +601,14 @@ const AchatSaisie = () => {
               <ArrowUturnLeftIcon className="w-5 h-5" />
               <span>Annuler</span>
             </button>
-            
+
             <button
               type="submit"
               disabled={formData.lignes.length === 0 || submitting}
-              className={`px-8 py-3 rounded-lg font-semibold transition-all flex items-center space-x-2 ${
-                formData.lignes.length > 0 && !submitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 hover:shadow-lg'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-8 py-3 rounded-lg font-semibold transition-all flex items-center space-x-2 ${formData.lignes.length > 0 && !submitting
+                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 hover:shadow-lg'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
             >
               {submitting ? (
                 <>

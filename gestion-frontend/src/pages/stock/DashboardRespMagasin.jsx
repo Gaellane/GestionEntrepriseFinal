@@ -1,8 +1,49 @@
-import { useState, useEffect } from 'react';
-import { ChartBarIcon, FunnelIcon, ArrowPathIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useRef } from 'react';
+import {
+  ChartBarIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  AdjustmentsHorizontalIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
+} from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  RadialLinearScale
+} from 'chart.js';
+import { Bar, Doughnut, Line, Radar } from 'react-chartjs-2';
 import stockKpiApi from '../../api/stockKpiApi';
 import stockApi from '../../api/stock';
+
+// Enregistrer les composants Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  RadialLinearScale
+);
 
 export default function DashboardRespMagasin() {
   const navigate = useNavigate();
@@ -18,11 +59,16 @@ export default function DashboardRespMagasin() {
   const [depots, setDepots] = useState([]);
   const [categories, setCategories] = useState([]);
   const [riskyLots, setRiskyLots] = useState([]);
+  const [adjustmentHistory, setAdjustmentHistory] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [expandedArticle, setExpandedArticle] = useState(null);
+  const [articleMovements, setArticleMovements] = useState({});
 
   useEffect(() => {
     loadDepots();
     loadCategories();
     loadKpiData();
+    loadAdjustmentHistory();
   }, []);
 
   const loadDepots = async () => {
@@ -39,14 +85,11 @@ export default function DashboardRespMagasin() {
   const loadCategories = async () => {
     try {
       const res = await stockKpiApi.getCategories();
-      console.log('[DashboardRespMagasin] Categories response:', res);
       const data = res && res.data ? res.data : res;
-      console.log('[DashboardRespMagasin] Categories data:', data);
       const categoryList = Array.isArray(data) ? data : [];
       setCategories(categoryList);
-      console.log('[DashboardRespMagasin] Categories loaded:', categoryList.length);
     } catch (err) {
-      console.error('[DashboardRespMagasin] Failed to load categories', err);
+      console.error('Failed to load categories', err);
     }
   };
 
@@ -57,7 +100,6 @@ export default function DashboardRespMagasin() {
       const res = await stockKpiApi.getStockPrecisionKpi(customFilters);
       const data = res && res.data ? res.data : res;
       setKpiData(data);
-      // charger les lots à risque en fonction des mêmes filtres
       loadRiskyLots(customFilters);
     } catch (err) {
       setError(err.message || String(err));
@@ -77,23 +119,82 @@ export default function DashboardRespMagasin() {
     }
   };
 
+  const loadAdjustmentHistory = async () => {
+    try {
+      const res = await stockKpiApi.getAdjustmentHistory(filters);
+      const data = res && res.data ? res.data : res;
+      setAdjustmentHistory(Array.isArray(data) ? data.slice(0, 10) : []);
+    } catch (err) {
+      console.error('Failed to load adjustment history', err);
+    }
+  };
+
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const applyFilters = () => {
     loadKpiData(filters);
+    loadAdjustmentHistory();
+  };
+
+  const toggleArticleMovements = async (articleId) => {
+    if (expandedArticle === articleId) {
+      setExpandedArticle(null);
+    } else {
+      setExpandedArticle(articleId);
+      if (!articleMovements[articleId]) {
+        try {
+          console.log('Loading movements for article:', articleId);
+          const res = await stockApi.getLotMouvementsByArticle(articleId);
+          console.log('Raw response:', res);
+
+          // Extraire les données de la réponse
+          let data = res;
+          if (res?.data !== undefined) {
+            data = res.data;
+          }
+          if (res?.payload !== undefined) {
+            data = res.payload;
+          }
+
+          console.log('Extracted data:', data);
+          const movements = Array.isArray(data) ? data : [];
+          console.log('Movements array:', movements);
+
+          setArticleMovements(prev => ({
+            ...prev,
+            [articleId]: movements
+          }));
+        } catch (err) {
+          console.error('Failed to load movements for article', articleId, err);
+          setArticleMovements(prev => ({
+            ...prev,
+            [articleId]: []
+          }));
+        }
+      }
+    }
   };
 
   const resetFilters = () => {
     const emptyFilters = { depotId: '', categoryId: '', dateDebut: '', dateFin: '' };
     setFilters(emptyFilters);
     loadKpiData(emptyFilters);
+    loadAdjustmentHistory();
   };
 
   const formatNumber = (num) => {
     if (num == null) return '0';
     return Number(num).toFixed(2);
+  };
+
+  const formatCurrency = (num) => {
+    if (num == null) return '0 Ar';
+    return new Intl.NumberFormat('fr-MG', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(num) + ' Ar';
   };
 
   const getColorForPrecision = (taux) => {
@@ -102,155 +203,166 @@ export default function DashboardRespMagasin() {
     return 'text-red-600 bg-red-100';
   };
 
-  const renderBarChart = () => {
-    if (!kpiData || !kpiData.details || kpiData.details.length === 0) {
-      return <div className="text-center text-gray-500 py-8">Aucune donnée disponible</div>;
-    }
+  // Données pour le graphique des écarts
+  const getEcartChartData = () => {
+    if (!kpiData?.details) return null;
 
-    const maxValue = Math.max(
-      ...kpiData.details.map(d => Math.max(d.stockTheorique || 0, d.stockPhysique || 0))
-    );
+    const sortedDetails = [...kpiData.details]
+      .sort((a, b) => Math.abs(b.ecart || 0) - Math.abs(a.ecart || 0))
+      .slice(0, 10);
 
-    return (
-      <div className="space-y-6">
-        {kpiData.details.slice(0, 10).map((detail, idx) => {
-          const theoriqueWidth = maxValue > 0 ? (detail.stockTheorique / maxValue) * 100 : 0;
-          const physiqueWidth = maxValue > 0 ? (detail.stockPhysique / maxValue) * 100 : 0;
-          const ecart = detail.ecart || 0;
-
-          return (
-            <div key={idx} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="font-medium text-gray-700 text-sm">
-                    {detail.articleNom || detail.articleRef || `Article ${detail.articleId}`}
-                  </span>
-                  {detail.categoryName && (
-                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {detail.categoryName}
-                    </span>
-                  )}
-                </div>
-                <span className={`px-2 py-1 rounded text-xs font-semibold ${getColorForPrecision(detail.tauxPrecision || 0)}`}>
-                  {formatNumber(detail.tauxPrecision)}%
-                </span>
-              </div>
-              
-              {/* Barres groupées avec écart */}
-              <div className="flex items-center gap-4">
-                {/* Barre théorique */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span className="text-xs text-gray-600">Théorique: {formatNumber(detail.stockTheorique)}</span>
-                  </div>
-                  <div className="bg-gray-200 rounded h-6 relative overflow-hidden">
-                    <div 
-                      className="bg-blue-500 h-6 rounded transition-all duration-500 flex items-center justify-end pr-2"
-                      style={{ width: `${theoriqueWidth}%` }}
-                    >
-                      {theoriqueWidth > 10 && <span className="text-xs text-white font-semibold">{formatNumber(detail.stockTheorique)}</span>}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Barre physique */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-3 h-3 bg-emerald-500 rounded"></div>
-                    <span className="text-xs text-gray-600">Physique: {formatNumber(detail.stockPhysique)}</span>
-                  </div>
-                  <div className="bg-gray-200 rounded h-6 relative overflow-hidden">
-                    <div 
-                      className="bg-emerald-500 h-6 rounded transition-all duration-500 flex items-center justify-end pr-2"
-                      style={{ width: `${physiqueWidth}%` }}
-                    >
-                      {physiqueWidth > 10 && <span className="text-xs text-white font-semibold">{formatNumber(detail.stockPhysique)}</span>}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Indicateur d'écart */}
-                <div className="w-20 text-center">
-                  <div className={`text-sm font-bold ${
-                    ecart > 0 ? 'text-emerald-600' : ecart < 0 ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {ecart > 0 ? '+' : ''}{formatNumber(ecart)}
-                  </div>
-                  <div className="text-xs text-gray-500">écart</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
+    return {
+      labels: sortedDetails.map(d => d.articleNom?.substring(0, 20) + '...' || `Article ${d.articleId}`),
+      datasets: [
+        {
+          label: 'Écart (Physique - Théorique)',
+          data: sortedDetails.map(d => d.ecart || 0),
+          backgroundColor: sortedDetails.map(d =>
+            d.ecart > 0 ? 'rgba(16, 185, 129, 0.7)' :
+              d.ecart < 0 ? 'rgba(239, 68, 68, 0.7)' :
+                'rgba(156, 163, 175, 0.7)'
+          ),
+          borderColor: sortedDetails.map(d =>
+            d.ecart > 0 ? 'rgb(16, 185, 129)' :
+              d.ecart < 0 ? 'rgb(239, 68, 68)' :
+                'rgb(156, 163, 175)'
+          ),
+          borderWidth: 1,
+        }
+      ]
+    };
   };
 
-  const renderGaugeChart = () => {
-    if (!kpiData) return null;
+  // Données pour le graphique de répartition des précisions
+  const getPrecisionDistributionData = () => {
+    if (!kpiData?.details) return null;
 
-    const taux = kpiData.tauxPrecision || 0;
-    const angle = (taux / 100) * 180; // 0 à 180 degrés
-    const radian = ((angle - 90) * Math.PI) / 180;
-    const cx = 100;
-    const cy = 100;
-    const radius = 70;
-    const needleX = cx + radius * Math.cos(radian);
-    const needleY = cy + radius * Math.sin(radian);
+    const excellent = kpiData.details.filter(d => (d.tauxPrecision || 0) >= 95).length;
+    const good = kpiData.details.filter(d => (d.tauxPrecision || 0) >= 85 && (d.tauxPrecision || 0) < 95).length;
+    const poor = kpiData.details.filter(d => (d.tauxPrecision || 0) < 85).length;
 
-    return (
-      <div className="flex flex-col items-center">
-        <svg viewBox="0 0 200 120" className="w-full max-w-sm">
-          {/* Arc de fond */}
-          <path
-            d="M 30 100 A 70 70 0 0 1 170 100"
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="20"
-            strokeLinecap="round"
-          />
-          
-          {/* Arc de progression */}
-          <path
-            d="M 30 100 A 70 70 0 0 1 170 100"
-            fill="none"
-            stroke={taux >= 95 ? '#10b981' : taux >= 85 ? '#f59e0b' : '#ef4444'}
-            strokeWidth="20"
-            strokeLinecap="round"
-            strokeDasharray={`${(taux / 100) * 220} 220`}
-          />
-          
-          {/* Aiguille */}
-          <line
-            x1={cx}
-            y1={cy}
-            x2={needleX}
-            y2={needleY}
-            stroke="#1f2937"
-            strokeWidth="2"
-          />
-          <circle cx={cx} cy={cy} r="5" fill="#1f2937" />
-          
-          {/* Valeur au centre */}
-          <text x={cx} y={cy + 25} textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">
-            {formatNumber(taux)}%
-          </text>
-        </svg>
-        
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">Taux de précision global</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Stock théorique: {formatNumber(kpiData.stockTheoriqueTotal)} | 
-            Stock physique: {formatNumber(kpiData.stockPhysiqueTotal)}
-          </p>
-        </div>
-      </div>
-    );
+    return {
+      labels: ['Excellente (≥95%)', 'Bonne (85-94%)', 'Insuffisante (<85%)'],
+      datasets: [
+        {
+          data: [excellent, good, poor],
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(239, 68, 68, 0.8)'
+          ],
+          borderColor: [
+            'rgb(16, 185, 129)',
+            'rgb(245, 158, 11)',
+            'rgb(239, 68, 68)'
+          ],
+          borderWidth: 2,
+        }
+      ]
+    };
+  };
+
+  // Données pour le graphique radar par catégorie
+  const getCategoryRadarData = () => {
+    if (!kpiData?.details) return null;
+
+    const categoriesMap = new Map();
+    kpiData.details.forEach(detail => {
+      const categoryName = detail.categoryName || 'Non catégorisé';
+      if (!categoriesMap.has(categoryName)) {
+        categoriesMap.set(categoryName, {
+          count: 0,
+          totalPrecision: 0,
+          totalValue: 0
+        });
+      }
+      const categoryData = categoriesMap.get(categoryName);
+      categoryData.count++;
+      categoryData.totalPrecision += detail.tauxPrecision || 0;
+      categoryData.totalValue += detail.valeurStock || 0;
+    });
+
+    const categoriesArray = Array.from(categoriesMap.entries())
+      .slice(0, 8)
+      .sort((a, b) => b[1].totalValue - a[1].totalValue);
+
+    return {
+      labels: categoriesArray.map(([name]) => name.substring(0, 15) + (name.length > 15 ? '...' : '')),
+      datasets: [
+        {
+          label: 'Précision moyenne (%)',
+          data: categoriesArray.map(([, data]) => data.totalPrecision / data.count),
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+        },
+        {
+          label: 'Valeur stock (normalisée)',
+          data: categoriesArray.map(([, data]) => {
+            const maxValue = Math.max(...categoriesArray.map(([, d]) => d.totalValue));
+            return (data.totalValue / maxValue) * 100;
+          }),
+          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+          borderColor: 'rgb(16, 185, 129)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgb(16, 185, 129)',
+        }
+      ]
+    };
+  };
+
+  // Options pour les graphiques
+  const barChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            return `${context.dataset.label}: ${formatNumber(context.raw)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Écart en quantité'
+        }
+      }
+    }
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom',
+      }
+    }
+  };
+
+  const radarOptions = {
+    responsive: true,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          stepSize: 20
+        }
+      }
+    }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -268,30 +380,40 @@ export default function DashboardRespMagasin() {
         </button>
       </div>
 
-      {/* Notifications lots à risque */}
-      {!loading && riskyLots && riskyLots.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-yellow-800">Lots à risque</h3>
-              <p className="text-xs text-yellow-700">{riskyLots.length} lot(s) expirés ou expirant selon le filtre sélectionné.</p>
-            </div>
-            <div>
-              <button onClick={() => loadRiskyLots(filters)} className="text-sm text-yellow-800 underline">Rafraîchir</button>
-            </div>
-          </div>
-
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {riskyLots.slice(0,6).map((lot) => (
-              <div key={lot.id} className="bg-yellow-100 p-2 rounded">
-                <div className="text-sm font-medium text-yellow-900">{lot.numero} — {lot.article?.articleNom || lot.article?.articleRef || 'Article'}</div>
-                <div className="text-xs text-yellow-800">Dépôt: {lot.depot?.nomDepot || lot.depot?.nom || '-' } | Qté restante: {lot.quantiteRestante}</div>
-                <div className="text-xs text-yellow-700">Péremption: {lot.datePeremption ? new Date(lot.datePeremption).toLocaleString() : '-'}</div>
-              </div>
-            ))}
-          </div>
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
+                ? 'border-emerald-500 text-emerald-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Vue d'ensemble
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics'
+                ? 'border-emerald-500 text-emerald-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('risks')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'risks'
+                ? 'border-emerald-500 text-emerald-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              Risques & Alertes
+            </button>
+          </nav>
         </div>
-      )}
+      </div>
 
       {/* Filtres */}
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
@@ -373,7 +495,7 @@ export default function DashboardRespMagasin() {
         </div>
       </div>
 
-      {/* Affichage des KPIs */}
+      {/* Loading state */}
       {loading && (
         <div className="text-center py-12">
           <ArrowPathIcon className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
@@ -381,89 +503,432 @@ export default function DashboardRespMagasin() {
         </div>
       )}
 
+      {/* Error state */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
           <p className="text-red-800">Erreur: {error}</p>
         </div>
       )}
 
+      {/* Main content */}
       {!loading && !error && kpiData && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Jauge de précision globale */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Précision Globale</h2>
-            {renderGaugeChart()}
-          </div>
+        <>
+          {/* Vue d'ensemble */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Précision globale</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        {formatNumber(kpiData.tauxPrecision || 0)}%
+                      </p>
+                    </div>
+                    <div className={`p-3 rounded-full ${getColorForPrecision(kpiData.tauxPrecision || 0).split(' ')[1]}`}>
+                      <ChartBarIcon className="w-6 h-6 text-emerald-600" />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500">
+                    <span className="text-emerald-600">▲</span> {kpiData.details?.filter(d => (d.tauxPrecision || 0) >= 95).length || 0} articles excellents
+                  </div>
+                </div>
 
-          {/* Graphique à barres comparatif */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Comparaison par Article</h2>
-            <div className="overflow-y-auto max-h-96">
-              {renderBarChart()}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Écart total</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        {formatNumber(kpiData.details?.reduce((sum, d) => sum + Math.abs(d.ecart || 0), 0) || 0)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-amber-100">
+                      {kpiData.details?.reduce((sum, d) => sum + (d.ecart || 0), 0) >= 0 ? (
+                        <ArrowTrendingUpIcon className="w-6 h-6 text-amber-600" />
+                      ) : (
+                        <ArrowTrendingDownIcon className="w-6 h-6 text-red-600" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500">
+                    {kpiData.details?.filter(d => (d.ecart || 0) > 0).length || 0} surplus, {kpiData.details?.filter(d => (d.ecart || 0) < 0).length || 0} manquants
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Valeur totale du stock</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        {formatCurrency(kpiData.details?.reduce((sum, d) => sum + (d.valeurStock || 0), 0) || 0)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-blue-100">
+                      <ChartBarIcon className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500">
+                    Théorique: {formatNumber(kpiData.stockTheoriqueTotal)} | Physique: {formatNumber(kpiData.stockPhysiqueTotal)}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Articles à risque</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        {kpiData.details?.filter(d => (d.tauxPrecision || 0) < 85).length || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-red-100">
+                      <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500">
+                    Précision inférieure à 85%
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Graphique des écarts */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Top 10 des écarts les plus importants
+                  </h3>
+                  <div className="h-80">
+                    {getEcartChartData() && (
+                      <Bar data={getEcartChartData()} options={barChartOptions} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Graphique de répartition des précisions */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Répartition des niveaux de précision
+                  </h3>
+                  <div className="h-80 flex items-center justify-center">
+                    {getPrecisionDistributionData() && (
+                      <Doughnut data={getPrecisionDistributionData()} options={doughnutOptions} />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tableau détaillé */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Détails par article</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Article</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Catégorie</th>
+                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Valorisation</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Stock Théorique</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Stock Physique</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Écart</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Valeur Stock</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Précision</th>
+                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Mouvements</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kpiData.details?.slice(0, 15).map((detail, idx) => (
+                        <>
+                          <tr key={idx} className="border-b hover:bg-gray-50">
+                            <td className="px-4 py-3 text-gray-800">
+                              {detail.articleNom || detail.articleRef || `Article ${detail.articleId}`}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-sm">
+                              {detail.categoryName || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${detail.valorisation === 'FIFO' ? 'bg-blue-100 text-blue-700' :
+                                detail.valorisation === 'LIFO' ? 'bg-purple-100 text-purple-700' :
+                                  detail.valorisation === 'CMUP' ? 'bg-green-100 text-green-700' :
+                                    'bg-gray-100 text-gray-700'
+                                }`}>
+                                {detail.valorisation || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-blue-600 font-medium">
+                              {formatNumber(detail.stockTheorique)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-emerald-600 font-medium">
+                              {formatNumber(detail.stockPhysique)}
+                            </td>
+                            <td className={`px-4 py-3 text-right font-medium ${detail.ecart >= 0 ? 'text-emerald-600' : 'text-red-600'
+                              }`}>
+                              {detail.ecart >= 0 ? '+' : ''}{formatNumber(detail.ecart)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-800 font-semibold">
+                              {formatCurrency(detail.valeurStock)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${getColorForPrecision(detail.tauxPrecision || 0)}`}>
+                                {formatNumber(detail.tauxPrecision)}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => toggleArticleMovements(detail.articleId)}
+                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                              >
+                                {expandedArticle === detail.articleId ? (
+                                  <ChevronUpIcon className="w-5 h-5" />
+                                ) : (
+                                  <ChevronDownIcon className="w-5 h-5" />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                          {expandedArticle === detail.articleId && (
+                            <tr>
+                              <td colSpan="9" className="px-4 py-4 bg-gray-50">
+                                <div className="max-h-96 overflow-y-auto">
+                                  <h4 className="font-semibold text-gray-700 mb-3">Historique des mouvements de lots</h4>
+                                  {articleMovements[detail.articleId] !== undefined ? (
+                                    articleMovements[detail.articleId].length > 0 ? (
+                                      <table className="w-full text-xs">
+                                        <thead className="bg-gray-200">
+                                          <tr>
+                                            <th className="px-2 py-2 text-left">Date</th>
+                                            <th className="px-2 py-2 text-left">Lot N°</th>
+                                            <th className="px-2 py-2 text-left">Dépôt</th>
+                                            <th className="px-2 py-2 text-left">Type</th>
+                                            <th className="px-2 py-2 text-right">Quantité</th>
+                                            <th className="px-2 py-2 text-right">Prix unitaire</th>
+                                            <th className="px-2 py-2 text-left">Raison</th>
+                                            <th className="px-2 py-2 text-left">Description</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {articleMovements[detail.articleId].map((mouvement, mIdx) => (
+                                            <tr key={mIdx} className="border-b border-gray-300">
+                                              <td className="px-2 py-2 text-gray-700">
+                                                {mouvement.dateEntree ? new Date(mouvement.dateEntree).toLocaleString('fr-FR') : '-'}
+                                              </td>
+                                              <td className="px-2 py-2 text-gray-700">{mouvement.lotNumero || '-'}</td>
+                                              <td className="px-2 py-2 text-gray-700">{mouvement.depotNom || '-'}</td>
+                                              <td className="px-2 py-2">
+                                                <span className={`px-2 py-1 rounded text-xs font-semibold ${mouvement.typeMouvement?.toLowerCase().includes('entr') || mouvement.typeMouvementId === 1
+                                                  ? 'bg-green-100 text-green-700'
+                                                  : 'bg-red-100 text-red-700'
+                                                  }`}>
+                                                  {mouvement.typeMouvement || 'N/A'}
+                                                </span>
+                                              </td>
+                                              <td className="px-2 py-2 text-right font-medium">{formatNumber(mouvement.quantite)}</td>
+                                              <td className="px-2 py-2 text-right text-gray-600">
+                                                {mouvement.prixUnitaire ? formatCurrency(mouvement.prixUnitaire) : '-'}
+                                              </td>
+                                              <td className="px-2 py-2 text-gray-600">{mouvement.raison || '-'}</td>
+                                              <td className="px-2 py-2 text-gray-600">{mouvement.description || '-'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    ) : (
+                                      <p className="text-gray-500 text-center py-4">Aucun mouvement trouvé pour cet article</p>
+                                    )
+                                  ) : (
+                                    <div className="text-center py-4">
+                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                      <p className="text-gray-500">Chargement des mouvements...</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Tableau détaillé */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Détails par Article</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Article</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Catégorie</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Valorisation</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Stock Théorique</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Stock Physique</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Écart</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Valeur Stock</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">Précision</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kpiData.details && kpiData.details.map((detail, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-800">
-                        {detail.articleNom || detail.articleRef || `Article ${detail.articleId}`}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-sm">
-                        {detail.categoryName || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
-                        <span className={`px-2 py-1 rounded ${
-                          detail.valorisation === 'FIFO' ? 'bg-blue-100 text-blue-700' :
-                          detail.valorisation === 'LIFO' ? 'bg-purple-100 text-purple-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
-                          {detail.valorisation || '-'}
+          {/* Analytics */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Radar Chart par catégorie */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Analyse par catégorie
+                  </h3>
+                  <div className="h-96">
+                    {getCategoryRadarData() && (
+                      <Radar data={getCategoryRadarData()} options={radarOptions} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Top des articles à risque */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
+                    Articles à faible précision (≤85%)
+                  </h3>
+                  <div className="space-y-4">
+                    {kpiData.details
+                      ?.filter(d => (d.tauxPrecision || 0) < 85)
+                      .sort((a, b) => (a.tauxPrecision || 0) - (b.tauxPrecision || 0))
+                      .slice(0, 8)
+                      .map((detail, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {detail.articleNom || detail.articleRef || `Article ${detail.articleId}`}
+                            </p>
+                            <p className="text-xs text-gray-600">{detail.categoryName || '-'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-red-600 font-bold">{formatNumber(detail.tauxPrecision)}%</p>
+                            <p className="text-xs text-gray-500">Écart: {detail.ecart >= 0 ? '+' : ''}{formatNumber(detail.ecart)}</p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Historique des ajustements */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Historique des ajustements récents</h3>
+                <div className="space-y-4">
+                  {adjustmentHistory.length > 0 ? (
+                    adjustmentHistory.map((adjustment, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${adjustment.type === 'correction' ? 'bg-blue-100' :
+                            adjustment.type === 'inventaire' ? 'bg-emerald-100' :
+                              'bg-amber-100'
+                            }`}>
+                            <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {adjustment.articleNom || adjustment.articleRef}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {adjustment.motif || 'Ajustement de stock'} •
+                              {new Date(adjustment.date).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${adjustment.quantiteAjustee > 0 ? 'text-emerald-600' : 'text-red-600'
+                            }`}>
+                            {adjustment.quantiteAjustee > 0 ? '+' : ''}{formatNumber(adjustment.quantiteAjustee)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Ancien: {formatNumber(adjustment.ancienneQuantite)} → Nouveau: {formatNumber(adjustment.nouvelleQuantite)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">Aucun ajustement récent</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Risks */}
+          {activeTab === 'risks' && (
+            <div className="space-y-6">
+              {/* Lots à risque */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
+                  Lots expirés ou expirant bientôt
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {riskyLots.slice(0, 9).map((lot, idx) => (
+                    <div key={idx} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium text-yellow-900">{lot.numero}</p>
+                          <p className="text-sm text-yellow-800">
+                            {lot.article?.articleNom || lot.article?.articleRef || 'Article inconnu'}
+                          </p>
+                        </div>
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
+                          Risque
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-blue-600 font-medium">
-                        {formatNumber(detail.stockTheorique)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-emerald-600 font-medium">
-                        {formatNumber(detail.stockPhysique)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-medium ${
-                        detail.ecart >= 0 ? 'text-emerald-600' : 'text-red-600'
-                      }`}>
-                        {detail.ecart >= 0 ? '+' : ''}{formatNumber(detail.ecart)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-800 font-semibold">
-                        {detail.valeurStock != null ? formatNumber(detail.valeurStock) + ' AR' : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getColorForPrecision(detail.tauxPrecision || 0)}`}>
-                          {formatNumber(detail.tauxPrecision)}%
-                        </span>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-yellow-700">
+                          <span className="font-medium">Qté:</span> {formatNumber(lot.quantiteRestante)}
+                        </p>
+                        <p className="text-yellow-700">
+                          <span className="font-medium">Dépôt:</span> {lot.depot?.nomDepot || lot.depot?.nom || '-'}
+                        </p>
+                        <p className="text-yellow-700">
+                          <span className="font-medium">Expire le:</span> {
+                            lot.datePeremption
+                              ? new Date(lot.datePeremption).toLocaleDateString('fr-FR')
+                              : 'Non spécifié'
+                          }
+                        </p>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+                {riskyLots.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">Aucun lot à risque identifié</p>
+                )}
+              </div>
+
+              {/* Alertes de précision */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Alertes de précision critique</h3>
+                <div className="space-y-3">
+                  {kpiData.details
+                    ?.filter(d => (d.tauxPrecision || 0) < 80)
+                    .map((detail, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {detail.articleNom || detail.articleRef || `Article ${detail.articleId}`}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Écart important: {detail.ecart >= 0 ? '+' : ''}{formatNumber(detail.ecart)} unités
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-red-600 font-bold">{formatNumber(detail.tauxPrecision)}%</p>
+                          <button
+                            onClick={() => navigate(`/stock/ajustements?article=${detail.articleId}`)}
+                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Corriger
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  {kpiData.details?.filter(d => (d.tauxPrecision || 0) < 80).length === 0 && (
+                    <p className="text-center text-gray-500 py-4">
+                      <CheckCircleIcon className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                      Aucune alerte critique
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

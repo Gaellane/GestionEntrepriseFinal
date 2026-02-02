@@ -62,7 +62,6 @@ import com.app.gestion.dto.achat.ReceptionAchatCreateDTO;
 import com.app.gestion.dto.achat.ReceptionAchatLigneCreateDTO;
 import com.app.gestion.dto.achat.ReceptionAchatDTO;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,7 +80,7 @@ public class AchatService {
 
     @Autowired
     private AchatLigneRepository achatLigneRepository;
-    
+
     @Autowired
     private AchatProcessRepository achatProcessRepository;
 
@@ -100,7 +99,7 @@ public class AchatService {
     @Autowired
     private CommandeRepository commandeRepository;
 
-    @Autowired 
+    @Autowired
     private FournisseurRepository fournisseurRepository;
 
     @Autowired
@@ -123,7 +122,7 @@ public class AchatService {
 
     @Autowired
     private BonCommandeHistoriqueRepository bonCommandeHistoriqueRepository;
- 
+
     @Autowired
     private LivraisonAchatRepository livraisonAchatRepository;
 
@@ -138,15 +137,18 @@ public class AchatService {
 
     @Autowired
     private DepotRepository depotRepository;
-    @Autowired 
+    @Autowired
     private CaisseMouvementService caisseMouvementService;
-
+    @Autowired
+    private LotService lotService;
 
     public Achat createAchat(AchatCreateDTO achatDTO) {
         LocalDateTime now = LocalDateTime.now();
         Utilisateur currentUser = currentUserUtil.getCurrentUser();
-        Action createAction = actionRepository.findByActionName("CREATE").orElseThrow(() -> new RuntimeException("Action CREATE not found"));
-        AchatProcess createProcess = achatProcessRepository.findByValeur(1).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 1 not found"));
+        Action createAction = actionRepository.findByActionName("CREATE")
+                .orElseThrow(() -> new RuntimeException("Action CREATE not found"));
+        AchatProcess createProcess = achatProcessRepository.findByValeur(1)
+                .orElseThrow(() -> new RuntimeException("AchatProcess with valeur 1 not found"));
 
         Achat achat = new Achat();
         // set data Achat
@@ -163,7 +165,7 @@ public class AchatService {
             AchatLigne ligne = new AchatLigne();
             ligne.setAchat(achat);
             Article article = articleRepository.findById(ligneDTO.getArticleId())
-                .orElseThrow(() -> new RuntimeException("Article not found with id " + ligneDTO.getArticleId()));
+                    .orElseThrow(() -> new RuntimeException("Article not found with id " + ligneDTO.getArticleId()));
             ligne.setArticle(article);
             ligne.setQuantite(ligneDTO.getQuantite());
             ligne.setPrixUnitaire(ligneDTO.getPrixUnitaireEstime());
@@ -196,17 +198,16 @@ public class AchatService {
         auditLog.setNewValues(achat.toString());
         auditLogRepository.save(auditLog);
 
-        // 
-        
+        //
+
         return achatRepository.save(achat);
     }
-
 
     public List<AchatProcess> getAllAchatProcesses() {
         return achatProcessRepository.findAll();
     }
 
-    public List<AchatCPL> getAllAchat(){
+    public List<AchatCPL> getAllAchat() {
         List<Achat> achats = achatRepository.findAllWithDemandeurAndProcess();
         List<AchatCPL> achatCPLs = new ArrayList<>();
         for (Achat achat : achats) {
@@ -221,21 +222,24 @@ public class AchatService {
         return AchatCPL.mapToDTO(achat);
     }
 
-    public Achat validerMagasinier(Integer id){
-        Achat achat = achatRepository.findById(id).orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
-        if(achat.getProcess().getValeur() != 1){
+    public Achat validerMagasinier(Integer id) {
+        Achat achat = achatRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
+        if (achat.getProcess().getValeur() != 1) {
             throw new RuntimeException("Achat is not in a valid state for magasinier validation");
         }
 
-        AchatProcess validerProcess = achatProcessRepository.findByValeur(11).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 11 not found"));
+        AchatProcess validerProcess = achatProcessRepository.findByValeur(11)
+                .orElseThrow(() -> new RuntimeException("AchatProcess with valeur 11 not found"));
         AchatHistorique historique = new AchatHistorique();
 
-        //audit
-        Action action = actionRepository.findByActionName("VALIDATE").orElseThrow(() -> new RuntimeException("Action VALIDATE_MAGASINIER not found"));
-        
+        // audit
+        Action action = actionRepository.findByActionName("VALIDATE")
+                .orElseThrow(() -> new RuntimeException("Action VALIDATE_MAGASINIER not found"));
+
         LocalDateTime now = LocalDateTime.now();
         Utilisateur currentUser = currentUserUtil.getCurrentUser();
-        
+
         // set data audit log
         AuditLog auditLog = new AuditLog();
         auditLog.setUtilisateur(currentUser);
@@ -245,48 +249,47 @@ public class AchatService {
         auditLog.setDetails("Validated magasinier for achat with reference " + achat.getRefe());
         auditLog.setIdsClasses(achat.getId().toString());
         auditLog.setNewValues("Process changed to " + validerProcess.getProcessName());
-        
-        
-        
+
         historique.setAchat(achat);
         historique.setProcess(validerProcess);
         historique.setDateEntree(LocalDateTime.now());
-        
+
         achat.setProcess(validerProcess);
-        
+
         achatHistoriqueRepository.save(historique);
-        
+
         auditLogRepository.save(auditLog);
-        
 
         return achatRepository.save(achat);
     }
 
-    public Achat validerFinancier(Integer id){
-        Achat achat = achatRepository.findById(id).orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
-        if(achat.getProcess().getValeur() != 11){
+    public Achat validerFinancier(Integer id) {
+        Achat achat = achatRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
+        if (achat.getProcess().getValeur() != 11) {
             throw new RuntimeException("Achat is not in a valid state for financier validation");
         }
 
-        // verification de fonds 
+        // verification de fonds
         double totalMontant = achat.getAchatLignes().stream()
-            .mapToDouble(ligne -> ligne.getQuantite() * ligne.getPrixUnitaire())
-            .sum();
+                .mapToDouble(ligne -> ligne.getQuantite() * ligne.getPrixUnitaire())
+                .sum();
 
-        if(!caisseMouvementService.estDepensePossible(totalMontant)) 
-        {
+        if (!caisseMouvementService.estDepensePossible(totalMontant)) {
             throw new RuntimeException("Fond de caisse insuffisant pour l'achat a valider");
-        }   
+        }
 
-        AchatProcess validerProcess = achatProcessRepository.findByValeur(21).orElseThrow(() -> new RuntimeException("AchatProcess with valeur 21 not found"));
+        AchatProcess validerProcess = achatProcessRepository.findByValeur(21)
+                .orElseThrow(() -> new RuntimeException("AchatProcess with valeur 21 not found"));
         AchatHistorique historique = new AchatHistorique();
-        
-        //audit
-        Action action = actionRepository.findByActionName("VALIDATE").orElseThrow(() -> new RuntimeException("Action VALIDATE_FINANCIER not found"));
+
+        // audit
+        Action action = actionRepository.findByActionName("VALIDATE")
+                .orElseThrow(() -> new RuntimeException("Action VALIDATE_FINANCIER not found"));
 
         LocalDateTime now = LocalDateTime.now();
         Utilisateur currentUser = currentUserUtil.getCurrentUser();
-        
+
         // set data audit log
         AuditLog auditLog = new AuditLog();
         auditLog.setUtilisateur(currentUser);
@@ -296,15 +299,13 @@ public class AchatService {
         auditLog.setDetails("Validated financier for achat with reference " + achat.getRefe());
         auditLog.setIdsClasses(achat.getId().toString());
         auditLog.setNewValues("Process changed to " + validerProcess.getProcessName());
-        
-
 
         historique.setAchat(achat);
         historique.setProcess(validerProcess);
         historique.setDateEntree(LocalDateTime.now());
-        
+
         achat.setProcess(validerProcess);
-        
+
         achatHistoriqueRepository.save(historique);
 
         auditLogRepository.save(auditLog);
@@ -319,14 +320,14 @@ public class AchatService {
         Achat achat = achatRepository.findById(achatId)
                 .orElseThrow(() -> new RuntimeException("Achat not found with id " + achatId));
 
-        if(achat.getProcess().getValeur() < 21 ) {
+        if (achat.getProcess().getValeur() < 21) {
             throw new RuntimeException("Achat is not in a valid state to send commandes");
         }
         if (achat.getProcess().getValeur() > 25) {
             throw new RuntimeException("Commandes have already been sent for this achat");
         }
-        
-        ids+= achatId.toString() + ";";
+
+        ids += achatId.toString() + ";";
 
         for (CommandeCreateDTO dto : commandeCreateDTOs) {
             Commande commande = new Commande();
@@ -339,14 +340,14 @@ public class AchatService {
             commande.setDateCommande(now);
 
             commandeRepository.save(commande);
-            ids+= commande.getId().toString() + ",";
+            ids += commande.getId().toString() + ",";
             newValues += dto.toString() + ";";
         }
         if (achat.getProcess().getValeur() == 21) {
             AchatProcess nextProcess = achatProcessRepository.findByValeur(25)
                     .orElseThrow(() -> new RuntimeException("AchatProcess with valeur 25 not found"));
             achat.setProcess(nextProcess);
-            
+
             AchatHistorique historique = new AchatHistorique();
             historique.setAchat(achat);
             historique.setProcess(nextProcess);
@@ -383,7 +384,8 @@ public class AchatService {
 
     public ProformaAchatDTO getProformaByAchatIdAndFournisseurId(Integer achatId, Integer fournisseurId) {
         ProformaAchat proformaAchat = proformaAchatRepository.findByAchatIdAndFournisseurId(achatId, fournisseurId)
-                .orElseThrow(() -> new RuntimeException("ProformaAchat not found for achatId " + achatId + " and fournisseurId " + fournisseurId));
+                .orElseThrow(() -> new RuntimeException(
+                        "ProformaAchat not found for achatId " + achatId + " and fournisseurId " + fournisseurId));
         return ProformaAchatDTO.mapToDTO(proformaAchat);
     }
 
@@ -393,24 +395,26 @@ public class AchatService {
         String ids = "";
 
         Achat achat = achatRepository.findById(proformaAchatCreateDTO.getAchatId())
-                .orElseThrow(() -> new RuntimeException("Achat not found with id " + proformaAchatCreateDTO.getAchatId()));
-        
-        ids+= achat.getId().toString() + ";";
+                .orElseThrow(
+                        () -> new RuntimeException("Achat not found with id " + proformaAchatCreateDTO.getAchatId()));
 
-        if(achat.getProcess().getValeur() < 21 ) {
+        ids += achat.getId().toString() + ";";
+
+        if (achat.getProcess().getValeur() < 21) {
             throw new RuntimeException("Achat pas encore valider");
         }
-        if(achat.getProcess().getValeur() < 25  ) {
+        if (achat.getProcess().getValeur() < 25) {
             throw new RuntimeException("Demande de proforma pas encore envoyee");
         }
-        if(achat.getProcess().getValeur() > 30 ) {
+        if (achat.getProcess().getValeur() > 30) {
             throw new RuntimeException("Commande deja en cours ou deja cloturee");
         }
 
         Fournisseur fournisseur = fournisseurRepository.findById(proformaAchatCreateDTO.getFournisseurId())
-                .orElseThrow(() -> new RuntimeException("Fournisseur not found with id " + proformaAchatCreateDTO.getFournisseurId()));
-        
-        ids+= fournisseur.getId().toString() + ";";
+                .orElseThrow(() -> new RuntimeException(
+                        "Fournisseur not found with id " + proformaAchatCreateDTO.getFournisseurId()));
+
+        ids += fournisseur.getId().toString() + ";";
 
         ProformaAchat proformaAchat = new ProformaAchat();
         proformaAchat.setAchat(achat);
@@ -420,12 +424,11 @@ public class AchatService {
         proformaAchat.setLienFichier(proformaAchatCreateDTO.getLienFichier());
 
         List<ProformaAchatLigneCreateDTO> ligneDTOs = proformaAchatCreateDTO.getLignes();
-        if(ligneDTOs == null || ligneDTOs.isEmpty()) {
+        if (ligneDTOs == null || ligneDTOs.isEmpty()) {
             throw new RuntimeException("ProformaAchat Vide");
         }
 
         List<ProformaAchatLigne> proformaAchatLignes = new ArrayList<>();
-
 
         for (ProformaAchatLigneCreateDTO ligneDTO : ligneDTOs) {
             ProformaAchatLigne ligne = new ProformaAchatLigne();
@@ -449,7 +452,7 @@ public class AchatService {
             proformaAchatLigneRepository.save(ligne);
         }
 
-        ids+= proformaAchat.getId().toString() + ";";
+        ids += proformaAchat.getId().toString() + ";";
 
         // audit log
         AuditLog auditLog = new AuditLog();
@@ -464,7 +467,8 @@ public class AchatService {
         auditLog.setClasses("Achat;Fournisseur;ProformaAchat");
         auditLog.setIdsClasses(ids);
         auditLog.setNewValues(proformaAchat.toString());
-        auditLog.setDetails("Creation de proforma pour achat avec reference " + achat.getRefe() + " venant du fournisseur " + fournisseur.getFournisseurNom());
+        auditLog.setDetails("Creation de proforma pour achat avec reference " + achat.getRefe()
+                + " venant du fournisseur " + fournisseur.getFournisseurNom());
 
         auditLogRepository.save(auditLog);
 
@@ -477,30 +481,29 @@ public class AchatService {
         return BonCommandeAchatDTO.mapToDTO(bonCommande);
     }
 
-
     public BonCommandeAchatDTO createCommandeAchat(Integer achatId) throws Exception {
         System.out.println("\n\n\n\n\n\n\nCreating commande achat with achatId: " + achatId);
         LocalDateTime now = LocalDateTime.now();
         String ids = achatId.toString() + ";";
         Achat achat = achatRepository.findById(achatId)
                 .orElseThrow(() -> new RuntimeException("Achat not found with id " + achatId));
-        if(achat.getProcess().getValeur() < 25 ) {
+        if (achat.getProcess().getValeur() < 25) {
             throw new RuntimeException("Achat is not in a valid state to create bon de commande");
-        } 
+        }
 
         List<ProformaAchat> proformas = proformaAchatRepository.findByAchatId(achatId);
         if (proformas.isEmpty()) {
             throw new RuntimeException("No proformas found for achat with id " + achatId);
         }
-        ProformaAchat bestProforma = null ;
-        if(proformas.size() == 1){
+        ProformaAchat bestProforma = null;
+        if (proformas.size() == 1) {
             bestProforma = proformas.get(0);
         } else {
             proformas.sort((p1, p2) -> Double.compare(p1.getMontantTotal(), p2.getMontantTotal()));
             bestProforma = proformas.get(0);
         }
-        ids+= bestProforma.getId().toString() + ";";
-        
+        ids += bestProforma.getId().toString() + ";";
+
         List<ProformaAchatLigne> proformaLignes = proformaAchatLigneRepository.findByProformaId(bestProforma.getId());
 
         BonCommandeProcess process = bonCommandeProcessRepository.findByValeur(1)
@@ -513,7 +516,7 @@ public class AchatService {
         bonCommande.setMontantTotal(bestProforma.getMontantTotal());
         bonCommande.setRefe(ReferenceGenerator.generateReference("BCA-"));
         bonCommande.setProcess(process);
-        
+
         List<BonCommandeAchatLigne> bonCommandeLignes = new ArrayList<>();
 
         List<AchatLigne> achatLignes = achatLigneRepository.findByAchatId(achatId);
@@ -542,11 +545,11 @@ public class AchatService {
         achatHistorique.setAchat(achat);
         achatHistorique.setProcess(achat.getProcess());
         achatHistorique.setDateEntree(now);
-        
+
         // audit log
         Action action = actionRepository.findByActionName("CREATE")
                 .orElseThrow(() -> new RuntimeException("Action CREATE_BON_COMMANDE not found"));
-        
+
         Utilisateur currentUser = currentUserUtil.getCurrentUser();
         AuditLog auditLog = new AuditLog();
         auditLog.setUtilisateur(currentUser);
@@ -555,7 +558,8 @@ public class AchatService {
         auditLog.setClasses("Achat;ProformaAchat;");
         auditLog.setIdsClasses(ids);
         auditLog.setNewValues(bonCommande.toString());
-        auditLog.setDetails("Creation de bon de commande pour achat avec reference " + achatId + " basé sur la proforma " + bestProforma.getRefe());
+        auditLog.setDetails("Creation de bon de commande pour achat avec reference " + achatId
+                + " basé sur la proforma " + bestProforma.getRefe());
 
         bonCommandeAchatRepository.save(bonCommande);
         for (BonCommandeAchatLigne ligne : bonCommandeLignes) {
@@ -576,7 +580,8 @@ public class AchatService {
 
         // Récupérer le bon de commande
         BonCommandeAchat bonCommande = bonCommandeAchatRepository.findById(livraisonDTO.getBonCommandeId())
-                .orElseThrow(() -> new RuntimeException("BonCommandeAchat with id " + livraisonDTO.getBonCommandeId() + " not found"));
+                .orElseThrow(() -> new RuntimeException(
+                        "BonCommandeAchat with id " + livraisonDTO.getBonCommandeId() + " not found"));
 
         // Récupérer l'achat via le bon de commande -> proforma -> achat
         Achat achat = bonCommande.getProforma().getAchat();
@@ -613,7 +618,8 @@ public class AchatService {
         List<LivraisonAchatLigne> livraisonLignes = new ArrayList<>();
         for (LivraisonAchatLigneCreateDTO ligneDTO : livraisonDTO.getLignes()) {
             Article article = articleRepository.findById(ligneDTO.getArticleId())
-                    .orElseThrow(() -> new RuntimeException("Article with id " + ligneDTO.getArticleId() + " not found"));
+                    .orElseThrow(
+                            () -> new RuntimeException("Article with id " + ligneDTO.getArticleId() + " not found"));
 
             LivraisonAchatLigne ligne = new LivraisonAchatLigne();
             ligne.setLivraison(livraison);
@@ -634,7 +640,8 @@ public class AchatService {
         auditLog.setClasses("Achat;BonCommandeAchat;LivraisonAchat;");
         auditLog.setIdsClasses(ids);
         auditLog.setNewValues("Livraison créée: " + livraison.getRefe());
-        auditLog.setDetails("Création de livraison pour bon de commande " + bonCommande.getRefe() + " et achat " + achat.getRefe());
+        auditLog.setDetails(
+                "Création de livraison pour bon de commande " + bonCommande.getRefe() + " et achat " + achat.getRefe());
 
         // Sauvegarder tout
         livraisonAchatRepository.save(livraison);
@@ -654,11 +661,12 @@ public class AchatService {
         // Récupérer le bon de commande via l'achat
         BonCommandeAchat bonCommande = bonCommandeAchatRepository.findByProforma_Achat_Id(achatId)
                 .orElseThrow(() -> new RuntimeException("BonCommandeAchat not found for achat with id " + achatId));
-        
+
         // Récupérer la livraison via le bon de commande
         LivraisonAchat livraison = livraisonAchatRepository.findByBonCommande_Id(bonCommande.getId())
-                .orElseThrow(() -> new RuntimeException("LivraisonAchat not found for bon de commande with id " + bonCommande.getId()));
-        
+                .orElseThrow(() -> new RuntimeException(
+                        "LivraisonAchat not found for bon de commande with id " + bonCommande.getId()));
+
         return LivraisonAchatDTO.mapToDTO(livraison);
     }
 
@@ -668,7 +676,8 @@ public class AchatService {
 
         // Récupérer la livraison
         LivraisonAchat livraison = livraisonAchatRepository.findById(receptionDTO.getLivraisonId())
-                .orElseThrow(() -> new RuntimeException("LivraisonAchat with id " + receptionDTO.getLivraisonId() + " not found"));
+                .orElseThrow(() -> new RuntimeException(
+                        "LivraisonAchat with id " + receptionDTO.getLivraisonId() + " not found"));
 
         BonCommandeAchat bonCommande = livraison.getBonCommande();
         Achat achat = bonCommande.getProforma().getAchat();
@@ -703,10 +712,14 @@ public class AchatService {
 
         // Créer les lignes de réception
         List<ReceptionAchatLigne> receptionLignes = new ArrayList<>();
+        List<BonCommandeAchatLigne> bonCommandeLignes = bonCommandeAchatLigneRepository
+                .findByBonCommandeId(bonCommande.getId());
+
         for (ReceptionAchatLigneCreateDTO ligneDTO : receptionDTO.getLignes()) {
             Article article = articleRepository.findById(ligneDTO.getArticleId())
-                    .orElseThrow(() -> new RuntimeException("Article with id " + ligneDTO.getArticleId() + " not found"));
-            
+                    .orElseThrow(
+                            () -> new RuntimeException("Article with id " + ligneDTO.getArticleId() + " not found"));
+
             Depot depot = depotRepository.findById(ligneDTO.getDepotId())
                     .orElseThrow(() -> new RuntimeException("Depot with id " + ligneDTO.getDepotId() + " not found"));
 
@@ -716,6 +729,29 @@ public class AchatService {
             ligne.setDepot(depot);
             ligne.setQuantite(ligneDTO.getQuantite());
             receptionLignes.add(ligne);
+
+            // Récupérer le prix unitaire depuis le bon de commande
+            Double prixUnitaire = bonCommandeLignes.stream()
+                    .filter(bcl -> bcl.getArticle().getId().equals(ligneDTO.getArticleId()))
+                    .findFirst()
+                    .map(BonCommandeAchatLigne::getPrixUnitaire)
+                    .orElse(0.0);
+
+            // Ajouter le lot au stock via lotService.entrerLot
+            try {
+                lotService.entrerLot(
+                        ligneDTO.getArticleId(),
+                        ligneDTO.getDepotId(),
+                        ligneDTO.getQuantite(),
+                        prixUnitaire,
+                        1, // raisonId = 1
+                        "Reception achat " + reception.getRefe(),
+                        now,
+                        null, // peut être null
+                        currentUser.getId());
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur lors de l'ajout du lot au stock: " + e.getMessage(), e);
+            }
         }
 
         // Ajouter dans l'audit log
@@ -730,7 +766,8 @@ public class AchatService {
         auditLog.setClasses("Achat;BonCommandeAchat;ReceptionAchat;");
         auditLog.setIdsClasses(ids);
         auditLog.setNewValues("Réception créée: " + reception.getRefe());
-        auditLog.setDetails("Création de réception pour bon de commande " + bonCommande.getRefe() + " et achat " + achat.getRefe());
+        auditLog.setDetails(
+                "Création de réception pour bon de commande " + bonCommande.getRefe() + " et achat " + achat.getRefe());
 
         // Sauvegarder tout
         receptionAchatRepository.save(reception);
@@ -750,21 +787,22 @@ public class AchatService {
         // Récupérer le bon de commande via l'achat
         BonCommandeAchat bonCommande = bonCommandeAchatRepository.findByProforma_Achat_Id(achatId)
                 .orElseThrow(() -> new RuntimeException("BonCommandeAchat not found for achat with id " + achatId));
-        
+
         // Récupérer la réception via le bon de commande
         ReceptionAchat reception = receptionAchatRepository.findByBonCommande_Id(bonCommande.getId())
-                .orElseThrow(() -> new RuntimeException("ReceptionAchat not found for bon de commande with id " + bonCommande.getId()));
-        
+                .orElseThrow(() -> new RuntimeException(
+                        "ReceptionAchat not found for bon de commande with id " + bonCommande.getId()));
+
         return ReceptionAchatDTO.mapToDTO(reception);
     }
 
     public void cloturerAchat(Integer achatId) {
         LocalDateTime now = LocalDateTime.now();
-        
+
         // Récupérer l'achat
         Achat achat = achatRepository.findById(achatId)
                 .orElseThrow(() -> new RuntimeException("Achat with id " + achatId + " not found"));
-        
+
         // Récupérer le bon de commande
         BonCommandeAchat bonCommande = bonCommandeAchatRepository.findByProforma_Achat_Id(achatId)
                 .orElseThrow(() -> new RuntimeException("BonCommandeAchat not found for achat with id " + achatId));
@@ -814,8 +852,4 @@ public class AchatService {
         auditLogRepository.save(auditLog);
     }
 
-    
-    
-
-  
 }

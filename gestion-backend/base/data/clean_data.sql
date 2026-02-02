@@ -1,7 +1,7 @@
 -- =====================================================
 -- SCRIPT DE DONNEES CLEAN - GestionEntreprise
--- Ce script contient toutes les données nécessaires
--- pour initialiser la base de données
+-- Ce script contient toutes les donnees necessaires
+-- pour initialiser la base de donnees
 -- =====================================================
 
 -- =====================================================
@@ -38,54 +38,54 @@ INSERT INTO roles (role_code, role_name, niveau_acces, department_id) VALUES
 -- 3. ACTIONS (Audit)
 -- =====================================================
 INSERT INTO actions (action_name, description) VALUES
--- Actions générales
-('CREATE', 'Création d''un nouvel enregistrement'),
-('UPDATE', 'Mise à jour d''un enregistrement existant'),
-('DELETE', 'Suppression d''un enregistrement'),
-('VIEW', 'Consultation d''un enregistrement'),
-('VALIDATE', 'Validation d''un enregistrement'),
-('REJECT', 'Rejet d''un enregistrement'),
-('APPROVE', 'Approbation finale d''un enregistrement'),
-('CANCEL', 'Annulation d''un enregistrement'),
+-- Actions generales
+('CREATE', 'Creation d un nouvel enregistrement'),
+('UPDATE', 'Mise à jour d un enregistrement existant'),
+('DELETE', 'Suppression d un enregistrement'),
+('VIEW', 'Consultation d un enregistrement'),
+('VALIDATE', 'Validation d un enregistrement'),
+('REJECT', 'Rejet d un enregistrement'),
+('APPROVE', 'Approbation finale d un enregistrement'),
+('CANCEL', 'Annulation d un enregistrement'),
 -- Achats
-('REQUEST', 'Création d''une demande d''achat'),
-('ORDER', 'Création d''une commande d''achat'),
-('CONFIRM_FUNDS', 'Confirmation de disponibilité des fonds'),
-('CLOSE_ORDER', 'Clôture d''une commande d''achat'),
+('REQUEST', 'Creation d une demande d achat'),
+('ORDER', 'Creation d une commande d achat'),
+('CONFIRM_FUNDS', 'Confirmation de disponibilite des fonds'),
+('CLOSE_ORDER', 'Clôture d une commande d achat'),
 -- Stock / Magasin
-('RECEIVE', 'Réception de marchandises'),
+('RECEIVE', 'Reception de marchandises'),
 ('RETURN', 'Retour de marchandises'),
 ('ADJUST', 'Ajustement des niveaux de stock'),
-('TRANSFER', 'Transfert de marchandises entre dépôts'),
-('RESERVE', 'Réservation de stock'),
-('RELEASE', 'Libération de stock réservé'),
-('INVENTORY', 'Réalisation d''inventaire'),
-('VALIDATE_INVENTORY', 'Validation des résultats d''inventaire'),
+('TRANSFER', 'Transfert de marchandises entre depôts'),
+('RESERVE', 'Reservation de stock'),
+('RELEASE', 'Liberation de stock reserve'),
+('INVENTORY', 'Realisation d inventaire'),
+('VALIDATE_INVENTORY', 'Validation des resultats d inventaire'),
 -- Ventes
-('QUOTE', 'Création d''un devis'),
-('SELL', 'Création d''une commande de vente'),
-('SHIP', 'Expédition de marchandises'),
+('QUOTE', 'Creation d un devis'),
+('SELL', 'Creation d une commande de vente'),
+('SHIP', 'Expedition de marchandises'),
 ('DELIVER', 'Livraison au client'),
-('INVOICE', 'Émission d''une facture'),
-('CREDIT_NOTE', 'Émission d''un avoir'),
+('INVOICE', 'emission d une facture'),
+('CREDIT_NOTE', 'emission d un avoir'),
 ('COLLECT', 'Encaissement client'),
-('Annulation Vente', 'Annulation d''une commande de vente'),
+('Annulation Vente', 'Annulation d une commande de vente'),
 -- Finance
 ('PAY', 'Paiement fournisseur'),
 ('RECONCILE', 'Rapprochement de comptes'),
-('CLOSE_PERIOD', 'Clôture de période comptable'),
--- Données
-('EXPORT', 'Export de données'),
-('IMPORT', 'Import de données'),
-('ARCHIVE', 'Archivage d''enregistrements'),
--- Sécurité / Audit
+('CLOSE_PERIOD', 'Clôture de periode comptable'),
+-- Donnees
+('EXPORT', 'Export de donnees'),
+('IMPORT', 'Import de donnees'),
+('ARCHIVE', 'Archivage d enregistrements'),
+-- Securite / Audit
 ('LOGIN', 'Connexion utilisateur'),
-('LOGOUT', 'Déconnexion utilisateur'),
-('DELEGATE', 'Délégation d''accès'),
-('REVOKE', 'Révocation d''accès délégué');
+('LOGOUT', 'Deconnexion utilisateur'),
+('DELEGATE', 'Delegation d accès'),
+('REVOKE', 'Revocation d accès delegue');
 
 -- =====================================================
--- 4. ENTITIES (Entités)
+-- 4. ENTITIES (Entites)
 -- =====================================================
 INSERT INTO entities (entity_name) VALUES
 ('Entite principale');
@@ -98,7 +98,7 @@ INSERT INTO depots (depot_name) VALUES
 ('DEPOT SECONDAIRE');
 
 -- =====================================================
--- 6. ENTITY_DEPOTS (Liaison Entité-Dépôt)
+-- 6. ENTITY_DEPOTS (Liaison Entite-Depôt)
 -- =====================================================
 INSERT INTO entity_depots (entity_id, depot_id) VALUES
 (1, 1),
@@ -116,7 +116,7 @@ INSERT INTO configurations (config_key, config_value, description) VALUES
 -- 8. UNITES
 -- =====================================================
 INSERT INTO unites (unite_name, abreviation) VALUES 
-('Unité', 'u'),
+('Unite', 'u'),
 ('Kilogramme', 'kg'),
 ('Litre', 'L'),
 ('Pièce', 'pc'),
@@ -129,18 +129,18 @@ INSERT INTO unites (unite_name, abreviation) VALUES
 INSERT INTO categories (categorie_name, description, dluo, dlc) VALUES
 ('Vêtements', 'Collections homme, femme et enfant', NULL, NULL),
 ('Parfums', 'Eaux de parfum et eaux de toilette', 3650, NULL),
-('Cosmétiques', 'Soins visage, corps et cheveux', 365, 180),
+('Cosmetiques', 'Soins visage, corps et cheveux', 365, 180),
 ('Accessoires', 'Sacs, ceintures, foulards et bijoux', NULL, NULL),
 ('Chaussures', 'Chaussures homme, femme, enfant', NULL, NULL),
 ('Lingerie', 'Sous-vêtements et lingerie fine', 365, NULL),
 ('Soin du Corps', 'Produits de soin et hygiène corporelle', 365, 180),
 ('Maquillage', 'Produits de maquillage professionnels', 365, 180),
 ('Alimentaire', 'Produits alimentaires et consommables', 180, 90),
-('Nettoyage', 'Produits de nettoyage et d''entretien', 730, NULL),
+('Nettoyage', 'Produits de nettoyage et d entretien', 730, NULL),
 ('Bureau', 'Fournitures de bureau et papier', NULL, NULL),
-('Electronique', 'Matériels électroniques et accessoires', NULL, NULL),
-('Emballage', 'Matériels d''emballage et conditionnement', NULL, NULL),
-('Divers', 'Autres produits non classés', NULL, NULL);
+('Electronique', 'Materiels electroniques et accessoires', NULL, NULL),
+('Emballage', 'Materiels d emballage et conditionnement', NULL, NULL),
+('Divers', 'Autres produits non classes', NULL, NULL);
 
 -- =====================================================
 -- 10. ARTICLES
@@ -148,11 +148,11 @@ INSERT INTO categories (categorie_name, description, dluo, dlc) VALUES
 INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id, unite_id) VALUES
 -- Vêtements
 ('VET-0001', 'Jean Slim Homme', 'FIFO', 'Jean slim coupe moderne', 1, 4),
-('VET-0002', 'Robe Soirée Femme', 'CMUP', 'Robe élégante en satin', 1, 4),
+('VET-0002', 'Robe Soiree Femme', 'CMUP', 'Robe elegante en satin', 1, 4),
 -- Parfums
 ('PARF-0001', 'Eau de Parfum Oriental 50ml', 'LIFO', 'Parfum oriental signature 50ml', 2, 3),
-('PARF-0002', 'Eau de Toilette Fraîche 100ml', 'FIFO', 'Parfum léger 100ml', 2, 3),
--- Cosmétiques
+('PARF-0002', 'Eau de Toilette Fraîche 100ml', 'FIFO', 'Parfum leger 100ml', 2, 3),
+-- Cosmetiques
 ('COS-0001', 'Crème Visage Nutri 50ml', 'CMUP', 'Crème hydratante visage', 3, 3),
 ('COS-0002', 'Shampooing Doux 1L', 'FIFO', 'Shampooing professionnel 1L', 3, 3),
 -- Accessoires
@@ -166,14 +166,14 @@ INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id
 -- Maquillage
 ('MAQ-0001', 'Palette Fards à Paupières', 'CMUP', 'Palette professionnelle 12 couleurs', 8, 4),
 -- Alimentaire
-('REF001', 'Sucre en poudre', 'LIFO', 'Sucre cristallisé en sachet 1kg', 9, 2),
-('REF002', 'Eau minérale', 'LIFO', 'Bouteille eau 1.5L', 9, 3),
+('REF001', 'Sucre en poudre', 'LIFO', 'Sucre cristallise en sachet 1kg', 9, 2),
+('REF002', 'Eau minerale', 'LIFO', 'Bouteille eau 1.5L', 9, 3),
 ('REF008', 'Riz basmati', 'FIFO', 'Riz grain long sac 5kg', 9, 2),
-('REF013', 'Farine blé', 'FIFO', 'Farine de blé T45 sac 1kg', 9, 2),
+('REF013', 'Farine ble', 'FIFO', 'Farine de ble T45 sac 1kg', 9, 2),
 -- Nettoyage
 ('REF004', 'Savon liquide', 'FIFO', 'Savon main 5L', 10, 3),
 ('REF010', 'Chiffon microfibre', 'FIFO', 'Chiffon nettoyage 30x30cm', 10, 4),
-('REF014', 'Désinfectant', 'FIFO', 'Désinfectant surfaces 750ml', 10, 3),
+('REF014', 'Desinfectant', 'FIFO', 'Desinfectant surfaces 750ml', 10, 3),
 -- Bureau
 ('REF003', 'Cahier A4', 'CMUP', 'Cahier 96 pages grands carreaux', 11, 4),
 ('REF009', 'Stylo bille', 'CMUP', 'Stylo bleu pointe moyenne', 11, 4),
@@ -181,13 +181,13 @@ INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id
 -- Electronique
 ('REF005', 'Câble USB', 'CMUP', 'Câble USB 2.0 longueur 1m', 12, 5),
 ('REF006', 'Cartouche encre', 'FIFO', 'Cartouche encre noire HP', 12, 4),
-('REF012', 'Pile AA', 'LIFO', 'Pile alcaline longue durée', 12, 4),
+('REF012', 'Pile AA', 'LIFO', 'Pile alcaline longue duree', 12, 4),
 -- Emballage
 ('REF007', 'Sac plastique', 'CMUP', 'Sac 50x60cm lot de 100', 13, 6),
 ('REF011', 'Bouteille vide', 'CMUP', 'Bouteille PET 1L', 13, 4);
 
 -- =====================================================
--- 11. ARTICLE_ENTITIES (Liaison Article-Entité)
+-- 11. ARTICLE_ENTITIES (Liaison Article-Entite)
 -- =====================================================
 INSERT INTO article_entities (entity_id, article_id)
 SELECT 1, id FROM articles;
@@ -246,39 +246,15 @@ INSERT INTO fournisseurs (fournisseur_nom, contact, adresse, coordonnee_bancaire
 -- =====================================================
 INSERT INTO clients (client_nom, contact, adresse, coordonnee_bancaire) VALUES
 ('SARL Andry & Co', 'Tel:+261341234567; contact@andryco.mg', 'Lot II A 12, Antananarivo', 'BIC:BNGMMGXXXX - ACC: 1234567890'),
-('Société FitLine', 'Tel:+261320345678; sales@fitline.mg', 'Zone Industrielle, Antsirabe', 'BIC:BFITMGXXX - ACC: 9876543210'),
+('Societe FitLine', 'Tel:+261320345678; sales@fitline.mg', 'Zone Industrielle, Antsirabe', 'BIC:BFITMGXXX - ACC: 9876543210'),
 ('Ets Rakoto Import', 'Tel:+261202233344; contact@rakoto.mg', 'Rue du Commerce, Toamasina', 'BIC:ERAKMGXXX - ACC: 1122334455'),
 ('Compagnie MadaTech', 'Tel:+261341112223; info@madatech.mg', 'Avenue de la Technologie, Antananarivo', 'BIC:MDTMGXXX - ACC: 5566778899'),
-('Association Solidarité', 'Tel:+261333224455; hello@solidarite.mg', 'Quartier Isoraka, Antananarivo', ''),
-('Rajaonarimampianina H.', 'Tel:+261345678901; raja.h@example.mg', 'Analakely, Antananarivo', ''),
-('Randriamamonjy S.', 'Tel:+261331234567; s.randria@example.mg', 'Ambohijatovo, Antananarivo', ''),
-('Rasoa R.', 'Tel:+261334455666; rasoa.r@example.mg', 'Antsirabe Centre', ''),
-('Andriamanana T.', 'Tel:+261339998877; tandria@example.mg', 'Toamasina, Rue des Fleurs', ''),
-('Mme. Vololona N.', 'Tel:+261327776655; vololona.n@example.mg', 'Fianarantsoa, Rue Principale', '');
-
--- =====================================================
--- 15. ACHAT_PROCESSES (Processus d'achat)
--- =====================================================
-INSERT INTO achat_processes (process_name, abreviation, valeur) VALUES 
-('CREER', 'CR', 1),
-('VALIDER MAGASINIER', 'VM', 11),
-('VALIDER COMPTABLE', 'VC', 21),
-('EN COMMANDE', 'EC', 31),
-('RECEPTIONNER', 'RE', 41),
-('VALIDER FACTURE', 'VF', 51),
-('CLOTURER', 'CL', 61),
-('ANNULER', 'AN', 0);
-
--- =====================================================
--- 16. BON_COMMANDE_PROCESSES (Processus Bon de commande)
--- =====================================================
-INSERT INTO bon_commande_processes (process_name, abreviation, valeur) VALUES
-('CREER', 'CR', 1),
-('VALIDER', 'VAL', 10),
-('ENVOYER', 'ENV', 20),
-('RECEPTIONNER', 'REC', 30),
-('CLOTURER', 'CLO', 40),
-('ANNULER', 'ANN', 0);
+('Association Solidarite', 'Tel:+261333224455; hello@solidarite.mg', 'Quartier Isoraka, Antananarivo',  ),
+('Rajaonarimampianina H.', 'Tel:+261345678901; raja.h@example.mg', 'Analakely, Antananarivo',  ),
+('Randriamamonjy S.', 'Tel:+261331234567; s.randria@example.mg', 'Ambohijatovo, Antananarivo',  ),
+('Rasoa R.', 'Tel:+261334455666; rasoa.r@example.mg', 'Antsirabe Centre',  ),
+('Andriamanana T.', 'Tel:+261339998877; tandria@example.mg', 'Toamasina, Rue des Fleurs',  ),
+('Mme. Vololona N.', 'Tel:+261327776655; vololona.n@example.mg', 'Fianarantsoa, Rue Principale',  );
 
 -- =====================================================
 -- 17. VENTE_PROCESSES (Processus de vente)
@@ -286,61 +262,61 @@ INSERT INTO bon_commande_processes (process_name, abreviation, valeur) VALUES
 INSERT INTO vente_processes (process_name, abreviation, valeur) VALUES
 -- Statuts Pro-forma (valeurs 10-50)
 ('Brouillon', 'BROUIL', 10),
-('Envoyé', 'ENVOYE', 20),
-('Accepté', 'ACCEPT', 30),
-('Refusé', 'REFUSE', 40),
-('Transformé en commande', 'TRANSF', 50),
+('Envoye', 'ENVOYE', 20),
+('Accepte', 'ACCEPT', 30),
+('Refuse', 'REFUSE', 40),
+('Transforme en commande', 'TRANSF', 50),
 -- Statuts Commande (valeurs 60-99)
-('Confirmée', 'CONFIR', 60),
-('En préparation', 'PREPAR', 70),
+('Confirmee', 'CONFIR', 60),
+('En preparation', 'PREPAR', 70),
 ('Prête', 'PRETE', 80),
-('Livrée', 'LIVRE', 90),
-('Annulée', 'ANNULE', 99);
+('Livree', 'LIVRE', 90),
+('Annulee', 'ANNULE', 99);
 
 -- =====================================================
 -- 18. LIVRAISON_VENTE_PROCESSES (Processus de livraison)
 -- =====================================================
 INSERT INTO livraison_vente_processes (process_name, abreviation, valeur) VALUES
-('En préparation', 'PREPAR', 10),
+('En preparation', 'PREPAR', 10),
 ('En transit', 'TRANS', 30),
-('Livrée', 'LIVRE', 50),
-('Annulée', 'ANNULE', 99);
+('Livree', 'LIVRE', 50),
+('Annulee', 'ANNULE', 99);
 
 -- =====================================================
--- 19. STOCK_RESERVATION_PROCESSES (Processus réservation stock)
+-- 19. STOCK_RESERVATION_PROCESSES (Processus reservation stock)
 -- =====================================================
 INSERT INTO stock_reservation_processes (process_name, abreviation, valeur) VALUES
-('Réservée', 'RES', 10),
-('Allouée', 'ALL', 20),
-('Consommée', 'CON', 30),
-('Libérée', 'LIB', 99);
+('Reservee', 'RES', 10),
+('Allouee', 'ALL', 20),
+('Consommee', 'CON', 30),
+('Liberee', 'LIB', 99);
 
 -- =====================================================
 -- 20. STOCK_TYPE_MOUVEMENTS (Types de mouvement stock)
 -- =====================================================
 INSERT INTO stock_type_mouvements (id, type_name, description) VALUES
-(1, 'ENTREE', 'Mouvement entrée en stock'),
+(1, 'ENTREE', 'Mouvement entree en stock'),
 (2, 'SORTIE', 'Mouvement sortie de stock');
 
 -- =====================================================
 -- 21. RAISON_MOUVEMENTS (Raisons de mouvement stock)
 -- =====================================================
 INSERT INTO raison_mouvements (raison_name, description) VALUES
-('Réception fournisseur', 'ENTREE'),
+('Reception fournisseur', 'ENTREE'),
 ('Retour client', 'ENTREE'),
 ('Ajustement positif', 'ENTREE'),
 ('Transfert entrant', 'ENTREE'),
 ('Livraison client', 'SORTIE'),
 ('Consommation interne', 'SORTIE'),
 ('Rebut', 'SORTIE'),
-('Ajustement négatif', 'SORTIE'),
+('Ajustement negatif', 'SORTIE'),
 ('Transfert sortant', 'SORTIE');
 
 -- =====================================================
 -- 22. INVENTAIRE_PROCESS (Processus d'inventaire)
 -- =====================================================
 INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
-('Création de l''inventaire', 'CRE', 1),
+('Creation de l inventaire', 'CRE', 1),
 ('Validation inventaire', 'VAL', 2),
 ('Rejet inventaire', 'REJ', 3),
 ('Clôture inventaire', 'CLO', 4),
@@ -360,53 +336,19 @@ INSERT INTO caisse_type_mouvements (type_name, valeur) VALUES
 -- 24. ROLES_ATTRIBUTION_PROCESS (Processus attribution rôles)
 -- =====================================================
 INSERT INTO roles_attribution_process (process_name, abreviation, valeur) VALUES
-('Création de l''attribution de role', 'CRE', 1),
+('Creation de l attribution de role', 'CRE', 1),
 ('Validation attribution de role', 'VAL', 2),
 ('Rejet attribution de role', 'REJ', 3),
 ('Annulation attribution de role', 'ANN', 4);
 
 -- =====================================================
--- 25. PROFORMA_PROCESSES (Processus Pro-forma - si table séparée)
+-- 25. PROFORMA_PROCESSES (Processus Pro-forma - si table separee)
 -- =====================================================
 -- Note: Cette table peut être optionnelle si vente_processes suffit
 -- INSERT INTO proforma_processes (process_name, process_code, description, ordre, couleur) VALUES
--- ('Créé', 'CREE', 'Pro-forma créé en brouillon', 1, '#6B7280'),
--- ('Validé', 'VALIDE', 'Pro-forma validé et envoyé au client', 2, '#10B981'),
--- ('Annulé', 'ANNULE', 'Pro-forma annulé', 3, '#EF4444');
-
--- =====================================================
--- 26. LOTS INITIAUX (Stock de départ)
--- =====================================================
-INSERT INTO lots (numero, article_id, depot_id, date_arrivee, date_peremption, quantite, quantite_restante, prix_unitaire, statut_lot)
-VALUES
-('LOT-VET-0001-001', (SELECT id FROM articles WHERE refe='VET-0001'), 1, NOW(), NULL, 200, 200, 45000.00, 'ACTIF'),
-('LOT-VET-0002-001', (SELECT id FROM articles WHERE refe='VET-0002'), 1, NOW(), NULL, 100, 100, 150000.00, 'ACTIF'),
-('LOT-PARF-0001-001', (SELECT id FROM articles WHERE refe='PARF-0001'), 1, NOW(), '2028-12-31', 150, 150, 85000.00, 'ACTIF'),
-('LOT-PARF-0002-001', (SELECT id FROM articles WHERE refe='PARF-0002'), 1, NOW(), '2028-06-30', 120, 120, 60000.00, 'ACTIF'),
-('LOT-COS-0001-001', (SELECT id FROM articles WHERE refe='COS-0001'), 2, NOW(), '2027-06-30', 300, 300, 22000.00, 'ACTIF'),
-('LOT-COS-0002-001', (SELECT id FROM articles WHERE refe='COS-0002'), 1, NOW(), '2027-12-31', 80, 80, 80000.00, 'ACTIF'),
-('LOT-ACC-0001-001', (SELECT id FROM articles WHERE refe='ACC-0001'), 1, NOW(), NULL, 50, 50, 220000.00, 'ACTIF'),
-('LOT-CHAUSS-0001-001', (SELECT id FROM articles WHERE refe='CHAUSS-0001'), 2, NOW(), NULL, 150, 150, 75000.00, 'ACTIF'),
-('LOT-LING-0001-001', (SELECT id FROM articles WHERE refe='LING-0001'), 1, NOW(), NULL, 200, 200, 55000.00, 'ACTIF'),
-('LOT-SOIN-0001-001', (SELECT id FROM articles WHERE refe='SOIN-0001'), 2, NOW(), '2027-12-31', 500, 500, 12500.00, 'ACTIF'),
-('LOT-MAQ-0001-001', (SELECT id FROM articles WHERE refe='MAQ-0001'), 1, NOW(), '2027-09-30', 250, 250, 35000.00, 'ACTIF'),
-('LOT-REF001-001', (SELECT id FROM articles WHERE refe='REF001'), 1, NOW(), '2027-06-30', 500, 500, 2500.00, 'ACTIF'),
-('LOT-REF002-001', (SELECT id FROM articles WHERE refe='REF002'), 2, NOW(), '2027-12-31', 1000, 1000, 1500.00, 'ACTIF'),
-('LOT-REF003-001', (SELECT id FROM articles WHERE refe='REF003'), 1, NOW(), NULL, 300, 300, 3500.00, 'ACTIF'),
-('LOT-REF004-001', (SELECT id FROM articles WHERE refe='REF004'), 2, NOW(), '2028-06-30', 100, 100, 15000.00, 'ACTIF'),
-('LOT-REF005-001', (SELECT id FROM articles WHERE refe='REF005'), 1, NOW(), NULL, 200, 200, 5000.00, 'ACTIF'),
-('LOT-REF006-001', (SELECT id FROM articles WHERE refe='REF006'), 1, NOW(), NULL, 150, 150, 25000.00, 'ACTIF'),
-('LOT-REF008-001', (SELECT id FROM articles WHERE refe='REF008'), 2, NOW(), '2027-09-30', 400, 400, 12000.00, 'ACTIF'),
-('LOT-REF009-001', (SELECT id FROM articles WHERE refe='REF009'), 1, NOW(), NULL, 1000, 1000, 500.00, 'ACTIF'),
-('LOT-REF012-001', (SELECT id FROM articles WHERE refe='REF012'), 2, NOW(), '2028-12-31', 500, 500, 3000.00, 'ACTIF');
-
--- =====================================================
--- 27. UTILISATEUR ADMIN PAR DEFAUT
--- Note: Mot de passe à hasher avec BCrypt avant insertion
--- Le mot de passe ci-dessous est "admin123" encodé en BCrypt
--- =====================================================
-INSERT INTO utilisateurs (nom, email, mot_de_passe, role_id, entity_id) VALUES
-('Administrateur', 'admin@gestion.mg', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.QB28wGb2VBmtXRUyDS', 1, 1);
+-- ('Cree', 'CREE', 'Pro-forma cree en brouillon', 1, '#6B7280'),
+-- ('Valide', 'VALIDE', 'Pro-forma valide et envoye au client', 2, '#10B981'),
+-- ('Annule', 'ANNULE', 'Pro-forma annule', 3, '#EF4444');
 
 -- =====================================================
 -- FIN DU SCRIPT

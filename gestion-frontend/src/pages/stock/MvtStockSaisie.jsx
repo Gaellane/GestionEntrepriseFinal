@@ -35,13 +35,22 @@ const emptyRow = (type) => ({
 
 export default function MvtStockSaisie() {
   const { type } = useParams();
-  
+  console.log(`[DEBUG] type ${type}`);
   // Gestion du type
   let defaultType;
   if (!type) {
     defaultType = 'ENTREE';
   } else if (!isNaN(Number(type))) {
-    defaultType = Number(type) === 1 ? 'ENTREE' : 'SORTIE';
+    const numType = Number(type);
+    if (numType === 1) {
+      defaultType = 'ENTREE';
+    } else if (numType === 2) {
+      defaultType = 'SORTIE';
+    } else if (numType === 3) {
+      defaultType = 'TRANSFER';
+    } else {
+      defaultType = 'ENTREE'; // default fallback
+    }
   } else {
     const t = type.toString().toUpperCase();
     if (t === 'SORTIE') {
@@ -49,8 +58,10 @@ export default function MvtStockSaisie() {
     } else if (t === 'TRANSFER' || t === 'TRANSFERT' || t === 'TRANSFERENCE') {
       // accept english/french variants
       defaultType = 'TRANSFER';
-    } else {
+    } else if (t === 'ENTREE') {
       defaultType = 'ENTREE';
+    } else {
+      defaultType = 'ENTREE'; // default fallback
     }
   }
 
@@ -237,7 +248,7 @@ export default function MvtStockSaisie() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      
+      <SideBar />
       <div className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* En-tête */}

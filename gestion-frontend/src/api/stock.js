@@ -93,4 +93,21 @@ export async function submitTransfer(payloads) {
   return await parseResponse(res);
 }
 
-export default { getFormData, submitMovement, submitMovements, submitTransfer };
+export async function getLotMouvementsByArticle(articleId) {
+  const url = `${apiBase}/api/lot-mouvements/by-article/${articleId}`;
+  console.log('=== getLotMouvementsByArticle ===');
+  console.log('URL:', url);
+  console.log('ArticleId:', articleId);
+  
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders()
+  });
+
+  console.log('Response status:', res.status);
+  const result = await parseResponse(res);
+  console.log('Parsed result:', result);
+  return result;
+}
+
+export default { getFormData, submitMovement, submitMovements, submitTransfer, getLotMouvementsByArticle };

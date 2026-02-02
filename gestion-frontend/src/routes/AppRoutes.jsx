@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../pages/auth/Login";
-import ProformaAchatSaisie from "../pages/achat/ProformaAchatSaisie";
 import ClientList from "../pages/vente/ClientList";
 import ClientForm from "../pages/vente/ClientForm";
 import ClientDetail from "../pages/vente/ClientDetail";
@@ -63,8 +62,6 @@ const AppRoutes = () => {
       <Route path="/unauthorized" element={<Unauthorized />} />
       
       {/* Routes non protégées pour le stock (legacy) */}
-      <Route path='/achat' element={<ProformaAchatSaisie />} />
-      <Route path='/demande' element={<ProformaAchatSaisie />} />
       <Route path='/stock' element={<MvtStockSaisie />} />
       <Route path='/stock/:type' element={<MvtStockSaisie />} />
 
@@ -77,9 +74,7 @@ const AppRoutes = () => {
         <Route path="/articles" element={<ListeArticle />} />
         
         {/* Achats */}
-        <Route path="/achats/saisie" element={<AchatSaisie />} />
         <Route path="/achats/demandes" element={<AchatList />} />
-        <Route path="/achats/proforma" element={<ProformaAchatSaisie />} />
         <Route path="/achats/fiche/:id" element={<AchatFiche />} />
 
         {/* Ventes et Clients */}
@@ -97,7 +92,6 @@ const AppRoutes = () => {
         <Route path="/proforma-ventes/nouveau" element={<ProformaVenteForm />} />
         <Route path="/proforma-ventes/:id" element={<ProformaVenteDetail />} />
         <Route path="/proforma-ventes/:id/modifier" element={<ProformaVenteForm />} />
-        <Route path="/vente/proforma" element={<ProformaAchatSaisie />} />
 
         {/* Commandes clients (ventes) */}
         <Route path="/ventes" element={<VenteList />} />
@@ -125,9 +119,9 @@ const AppRoutes = () => {
         <Route path="/stock/ajustements" element={<AjustementStock/>} />
         <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
         <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
-        <Route path="/stock/1" element={<MvtStockSaisie />} />
-        <Route path="/stock/2" element={<MvtStockSaisie />} />
-        <Route path="/stock/transfer" element={<MvtStockSaisie />} />
+        <Route path="/stock/:type" element={<MvtStockSaisie />} />
+        {/* <Route path="/stock/2" element={<MvtStockSaisie />} />
+        <Route path="/stock/transfer" element={<MvtStockSaisie />} /> */}
 
         {/* Inventaire */}
         <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />

@@ -17,7 +17,8 @@ import com.app.gestion.dto.stock.DepotDTO;
 import com.app.gestion.dto.stock.MovementFormData;
 import com.app.gestion.dto.stock.MovementRequest;
 import com.app.gestion.dto.stock.LotDTO;
- 
+import com.app.gestion.dto.stock.LotMouvementDTO;
+
 import com.app.gestion.service.ArticleService;
 import com.app.gestion.service.DepotService;
 import com.app.gestion.service.LotService;
@@ -36,9 +37,9 @@ public class LotMouvementController {
     private final DepotService depotService;
     private final RaisonMouvementService raisonMouvementService;
 
-    public LotMouvementController(LotService lotService, UtilisateurService utilisateurService, 
-                                  ArticleService articleService, DepotService depotService,
-                                  RaisonMouvementService raisonMouvementService) {
+    public LotMouvementController(LotService lotService, UtilisateurService utilisateurService,
+            ArticleService articleService, DepotService depotService,
+            RaisonMouvementService raisonMouvementService) {
         this.lotService = lotService;
         this.utilisateurService = utilisateurService;
         this.articleService = articleService;
@@ -70,7 +71,9 @@ public class LotMouvementController {
     @PostMapping("/transfer")
     @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN')")
     @Transactional
-    public ApiResponse<java.util.List<LotDTO>> submitTransfer(@org.springframework.web.bind.annotation.RequestBody java.util.List<TransferLineRequest> lines) throws Exception {
+    public ApiResponse<java.util.List<LotDTO>> submitTransfer(
+            @org.springframework.web.bind.annotation.RequestBody java.util.List<TransferLineRequest> lines)
+            throws Exception {
         try {
             var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || auth.getName() == null) {
@@ -83,7 +86,8 @@ public class LotMouvementController {
             java.util.List<LotDTO> results = new java.util.ArrayList<>();
 
             for (TransferLineRequest line : lines) {
-                if (line.getQuantite() == null || line.getQuantite() <= 0) continue;
+                if (line.getQuantite() == null || line.getQuantite() <= 0)
+                    continue;
                 // use service to transfer (handles splitting across lots)
                 java.util.List<com.app.gestion.model.Lot> createdLots = lotService.transfererLots(
                         line.getArticleId(),
@@ -93,8 +97,7 @@ public class LotMouvementController {
                         line.getRaisonId(),
                         line.getDescription(),
                         line.getDate() == null ? java.time.LocalDateTime.now() : line.getDate(),
-                        userId
-                );
+                        userId);
 
                 for (com.app.gestion.model.Lot l : createdLots) {
                     results.add(LotDTO.mapToDTO(l));
@@ -108,7 +111,8 @@ public class LotMouvementController {
         }
     }
 
-    // POST /saisir removed per request — form will be handled via GET form-data and direct submission elsewhere
+    // POST /saisir removed per request — form will be handled via GET form-data and
+    // direct submission elsewhere
 
     @GetMapping("/saisie")
     @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN')")
@@ -117,19 +121,20 @@ public class LotMouvementController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             System.out.println("Current authentication: " + auth);
             System.out.println("User authorities: " + (auth != null ? auth.getAuthorities() : "null"));
-            
+
             if (auth == null || auth.getName() == null) {
                 System.out.println("User not authenticated");
                 return new ApiResponse<>(false, "Utilisateur non authentifié", null);
             }
-            
+
             System.out.println("Loading form data for type: " + type);
 
             // load data
             List<ArticleDTO> articles = articleService.getAll();
             int movementType = (type == null) ? 1 : type;
             List<DepotDTO> depots = depotService.getAllForCurrentUser();
-            List<com.app.gestion.dto.stock.RaisonMouvementDTO> raisons = raisonMouvementService.getRaisonsForMovement(movementType);
+            List<com.app.gestion.dto.stock.RaisonMouvementDTO> raisons = raisonMouvementService
+                    .getRaisonsForMovement(movementType);
 
             MovementFormData data = MovementFormData.builder()
                     .articles(articles)
@@ -146,9 +151,42 @@ public class LotMouvementController {
         }
     }
 
+    @GetMapping("/by-article/{articleId}")
+    @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN','MAGINV')")
+    public ApiResponse<List<LotMouvementDTO>> getMouvementsByArticle(
+            @org.springframework.web.bind.annotation.PathVariable Integer articleId) {
+        try {
+            System.out.println("=== getMouvementsByArticle called for articleId: " + articleId + " ===");
+            List<com.app.gestion.model.LotMouvement> mouvements = lotService.getMouvementsByArticle(articleId);
+            System.out.println("Found " + (mouvements != null ? mouvements.size() : 0) + " mouvements");
+
+            List<LotMouvementDTO> dtos = new java.util.ArrayList<>();
+            if (mouvements != null) {
+                for (com.app.gestion.model.LotMouvement m : mouvements) {
+                    try {
+                        LotMouvementDTO dto = LotMouvementDTO.mapToDTO(m);
+                        dtos.add(dto);
+                        System.out.println("Mapped mouvement: id=" + dto.getId() + ", lotNumero=" + dto.getLotNumero()
+                                + ", type=" + dto.getTypeMouvement());
+                    } catch (Exception e) {
+                        System.err.println("Error mapping mouvement id=" + m.getId() + ": " + e.getMessage());
+                    }
+                }
+            }
+
+            System.out.println("Returning " + dtos.size() + " DTOs");
+            return new ApiResponse<>(true, "OK", dtos);
+        } catch (Exception e) {
+            System.err.println("Error in getMouvementsByArticle: " + e.getMessage());
+            e.printStackTrace();
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
     @PostMapping("/saisie")
     @PreAuthorize("hasAnyAuthority('RESP_MAGASIN','MAGRECEP','MAGSORT','ADMIN')")
-    public ApiResponse<List<LotDTO>> submitMovements(@org.springframework.web.bind.annotation.RequestBody List<MovementRequest> requests) throws Exception {
+    public ApiResponse<List<LotDTO>> submitMovements(
+            @org.springframework.web.bind.annotation.RequestBody List<MovementRequest> requests) throws Exception {
         try {
             var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || auth.getName() == null) {
@@ -172,28 +210,26 @@ public class LotMouvementController {
                 String t = req.getType() == null ? "ENTREE" : req.getType().toUpperCase();
                 if ("ENTREE".equals(t)) {
                     com.app.gestion.model.Lot lot = lotService.entrerLot(
-                        req.getArticleId(),
-                        req.getDepotId(),
-                        req.getQuantite(),
-                        req.getPrixUnitaire(),
-                        req.getRaisonId(),
-                        req.getDescription(),
-                        req.getDate(),
-                        req.getDatePeremption(),
-                        userId
-                    );
+                            req.getArticleId(),
+                            req.getDepotId(),
+                            req.getQuantite(),
+                            req.getPrixUnitaire(),
+                            req.getRaisonId(),
+                            req.getDescription(),
+                            req.getDate(),
+                            req.getDatePeremption(),
+                            userId);
                     LotDTO dto = LotDTO.mapToDTO(lot);
                     results.add(dto);
                     System.out.println("Entrée created: lotId=" + (lot != null ? lot.getId() : null) + ", dto=" + dto);
                 } else if ("SORTIE".equals(t)) {
                     List<com.app.gestion.model.Lot> lots = lotService.sortirLots(
-                        req.getArticleId(),
-                        req.getQuantite(),
-                        req.getRaisonId(),
-                        req.getDescription(),
-                        req.getDate(),
-                        userId
-                    );
+                            req.getArticleId(),
+                            req.getQuantite(),
+                            req.getRaisonId(),
+                            req.getDescription(),
+                            req.getDate(),
+                            userId);
                     for (com.app.gestion.model.Lot l : lots) {
                         LotDTO dto = LotDTO.mapToDTO(l);
                         results.add(dto);
@@ -213,5 +249,4 @@ public class LotMouvementController {
         }
     }
 
-    
 }

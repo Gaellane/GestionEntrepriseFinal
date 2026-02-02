@@ -61,6 +61,11 @@ public class LotService {
 
 
     @Transactional
+    public List<com.app.gestion.model.LotMouvement> getMouvementsByArticle(Integer articleId) {
+        return lotMouvementRepository.findByArticleId(articleId);
+    }
+
+    @Transactional
     public List<Lot> transfererLots(Integer articleId, Integer depotSourceId, Integer depotDestId, Double quantite, Integer raisonId, String description,LocalDateTime dateTransfert, Integer userId) throws Exception {
         List<Lot> lots= sortirLots(articleId, quantite, raisonId, description, dateTransfert, userId);
         List<Lot> lotsEntres=new ArrayList<>();
