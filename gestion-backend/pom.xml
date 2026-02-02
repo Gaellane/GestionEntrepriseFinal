@@ -101,6 +101,12 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
+		<!-- WebClient pour les appels HTTP (inclus dans spring-boot-starter-web mais explicite) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
 		<!-- Jakarta Validation pour les annotations de validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
