@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { AuthContext } from '../config/permissions';
+import React, { useState, createContext } from 'react';
+
+// Créer le contexte ici au lieu de l'importer
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {

@@ -21,11 +21,8 @@ public class VenteRequestDto {
     // Si création depuis pro-forma
     private Integer proformaId;
 
-    // Si création directe
-    @NotNull(message = "Le client est obligatoire")
     private Integer clientId;
 
-    @NotEmpty(message = "Au moins une ligne est requise")
     @Valid
     private List<VenteLigneDto> lignes;
 

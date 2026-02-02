@@ -134,9 +134,7 @@ const SideBar = () => {
                           }`
                         }
                       >
-                        <span className={`mr-3 transition-colors ${
-                          ({ isActive }) => isActive ? 'text-emerald-600' : 'text-emerald-500 group-hover:text-emerald-600'
-                        }`}>
+                        <span className="mr-3 transition-colors text-emerald-500 group-hover:text-emerald-600">
                           {subItem.icon}
                         </span>
                         <span>{subItem.label}</span>
@@ -177,7 +175,7 @@ const SideBar = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

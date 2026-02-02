@@ -59,12 +59,13 @@ public class LotValidationService {
         Integer dluo = categorie.getDluo();
 
         // Si ni DLC ni DLUO configurés, pas de gestion de péremption
-        if (dlc == null && dluo == null) {
-            return false;
-        }
+        // if (dlc == null && dluo == null) {
+        //     return false;
+        // }
 
-        // Vérifier si la date de péremption est dépassée
-        if (lot.getDatePeremption().isBefore(dateReference)) {
+        // Vérifier si la date de péremption est dépassée ou égale à la date de référence
+        // (on considère le lot périmé si datePeremption <= dateReference)
+        if (!lot.getDatePeremption().isAfter(dateReference)) {
             StatutLot ancienStatut = lot.getStatutLot();
             
             if (dlc != null && dlc > 0) {

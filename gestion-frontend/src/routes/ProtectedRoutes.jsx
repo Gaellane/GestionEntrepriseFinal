@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children }) => {
   
   // 2. Vérifier si la route actuelle est accessible
   const currentPath = location.pathname;
-  const hasAccess = canAccessRoute({currentPath, user});
+  const hasAccess = canAccessRoute(currentPath, user);
 
   console.log("hasAccess: ",hasAccess);
   console.log("user: ",user);

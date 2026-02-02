@@ -21,7 +21,7 @@ import {
   AdjustmentsHorizontalIcon,
   ShieldCheckIcon,
   ClipboardDocumentCheckIcon,
-  CheckBadgeIcon
+  CheckBadgeIcon,
   CurrencyDollarIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
@@ -48,6 +48,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Articles',
       icon: <CubeIcon className="w-5 h-5" />,
       roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
+      permission: PERMISSIONS.VIEW_DASHBOARD,
       subItems: [
         {
           id: 'liste-articles',
@@ -55,6 +56,7 @@ export const SIDEBAR_CONFIG = {
           path: '/articles',
           icon: <DocumentTextIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.MAGRECEPT, ROLES.MAGSORT],
+          permission: PERMISSIONS.EDIT_CONTENT,
         }
       ]
     },
@@ -63,6 +65,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Achats',
       icon: <ShoppingCartIcon className="w-5 h-5" />,
       roles: [ROLES.ADMIN],
+      permission: PERMISSIONS.EDIT_CONTENT,
       subItems: [
         {
           id: 'saisie-achat',
@@ -70,6 +73,7 @@ export const SIDEBAR_CONFIG = {
           path: '/achats/saisie',
           icon: <PlusIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+          permission: PERMISSIONS.EDIT_CONTENT,
 
         },
         {
@@ -78,6 +82,7 @@ export const SIDEBAR_CONFIG = {
           path: '/achats/demandes',
           icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+          permission: PERMISSIONS.EDIT_CONTENT,
 
         },
         {
@@ -86,6 +91,7 @@ export const SIDEBAR_CONFIG = {
           path: '/achats/proforma',
           icon: <DocumentTextIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+          permission: PERMISSIONS.EDIT_CONTENT,
         },
         {
           id: 'fournisseurs',
@@ -93,6 +99,7 @@ export const SIDEBAR_CONFIG = {
           path: '/achats/fournisseurs',
           icon: <UserGroupIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN],
+          permission: PERMISSIONS.MANAGE_CUSTOMERS,
         }
       ]
     },
@@ -101,6 +108,7 @@ export const SIDEBAR_CONFIG = {
       label: 'Vente',
       icon: <ChartBarIcon className="w-5 h-5" />,
       roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+      permission: PERMISSIONS.VIEW_SALES,
       subItems: [
         {
           id: 'clients',
@@ -108,34 +116,39 @@ export const SIDEBAR_CONFIG = {
           path: '/clients',
           icon: <UserGroupIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+          permission: PERMISSIONS.MANAGE_CUSTOMERS,
         },
         {
           id: 'tarification',
           label: 'Tarification',
           path: '/tarification',
           icon: <CurrencyDollarIcon className="w-4 h-4" />,
-          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+          permission: PERMISSIONS.VIEW_TARIFICATION_HISTORY
         },
         {
           id: 'proforma-ventes',
           label: 'Pro-formas',
           path: '/proforma-ventes',
           icon: <DocumentTextIcon className="w-4 h-4" />,
-          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+          permission: PERMISSIONS.CREATE_SALES
         },
         {
           id: 'commandes-ventes',
           label: 'Commandes',
           path: '/ventes',
           icon: <DocumentCheckIcon className="w-4 h-4" />,
-          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+          permission: PERMISSIONS.VIEW_SALES
         },
         {
           id: 'insertion-vente',
           label: 'Insertion',
           path: '/ventes/nouveau',
           icon: <DocumentPlusIcon className="w-4 h-4" />,
-          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE]
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE, ROLES.EMP_VENTE],
+          permission: PERMISSIONS.CREATE_SALES
         }
       ]
     },
@@ -143,7 +156,7 @@ export const SIDEBAR_CONFIG = {
       id: 'livraison',
       label: 'Livraison',
       icon: <TruckIcon className="w-5 h-5" />,
-      permission: 'view_deliveries',
+      permission: PERMISSIONS.VIEW_DELIVERIES,
 
       subItems: [
         {
@@ -151,14 +164,40 @@ export const SIDEBAR_CONFIG = {
           label: 'Liste',
           path: '/livraison/liste',
           icon: <ListBulletIcon className="w-4 h-4" />,
-          permission: 'view_delivery_list'
+          permission: PERMISSIONS.VIEW_DELIVERY_LIST
         },
         {
           id: 'enregistrement-livraison',
           label: 'Enregistrement',
           path: '/livraison/enregistrement',
           icon: <DocumentCheckIcon className="w-4 h-4" />,
-          permission: 'register_delivery'
+          permission: PERMISSIONS.REGISTER_DELIVERY
+        }
+      ]
+    },
+    {
+      id: 'caisse',
+      label: 'Caisse',
+      icon: <CurrencyDollarIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
+      permission: PERMISSIONS.VIEW_CAISSE,
+      subItems: [
+        {
+          id: 'mouvement-caisse',
+          label: 'Nouveau mouvement',
+          path: '/caisse/mouvements/creer',
+          icon: <PlusCircleIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
+          permission: PERMISSIONS.CREATE_CAISSE_MOVEMENT,
+        }
+        ,
+        {
+          id: 'encaisser-vente',
+          label: 'Encaisser vente',
+          path: '/caisse/mouvements/encaisser',
+          icon: <DocumentCheckIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
+          permission: PERMISSIONS.ENCAISSEMENT_VENTE,
         }
       ]
     },
@@ -166,21 +205,21 @@ export const SIDEBAR_CONFIG = {
       id: 'reporting',
       label: 'Reporting',
       icon: <ChartPieIcon className="w-5 h-5" />,
-      permission: 'view_sales',
+      permission: PERMISSIONS.VIEW_SALES,
       subItems: [
         {
           id: 'dashboard-kpi',
           label: 'Dashboard KPI',
           path: '/reporting/dashboard',
           icon: <ChartBarIcon className="w-4 h-4" />,
-          permission: 'view_sales'
+          permission: PERMISSIONS.VIEW_SALES
         },
         {
           id: 'export-ventes',
           label: 'Export Ventes',
           path: '/reporting/export',
           icon: <DocumentTextIcon className="w-4 h-4" />,
-          permission: 'view_sales'
+          permission: PERMISSIONS.VIEW_SALES
         }
       ]
     },
@@ -188,7 +227,7 @@ export const SIDEBAR_CONFIG = {
       id: 'inventaire',
       label: 'Inventaire',
       icon: <CubeIcon className="w-5 h-5" />,
-      permission: 'view_inventory',
+      permission: PERMISSIONS.VIEW_INVENTORY,
       roles : [ROLES.MAGASINIER,ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGINV],
       subItems: [
         {
@@ -196,7 +235,7 @@ export const SIDEBAR_CONFIG = {
           label: 'Initier',
           path: '/inventaire/form/new',
           icon: <PlusCircleIcon className="w-4 h-4" />,
-          permission: 'initiate_inventory',
+          permission: PERMISSIONS.INITIATE_INVENTORY,
           roles : [ROLES.MAGASINIER,ROLES.ADMIN,ROLES.MAGINV]
         },
         {
@@ -204,21 +243,23 @@ export const SIDEBAR_CONFIG = {
           label: 'Mes demandes',
           path: '/inventaire/mes-demandes',
           icon: <ListBulletIcon className="w-4 h-4" />,
-          roles: [ROLES.MAGINV]
+          roles: [ROLES.MAGINV],
+          permission: PERMISSIONS.VIEW_INVENTORY
         },
         {
           id: 'saisie-inventaire',
           label: 'Saisie inventaire',
           path: '/inventaire/perform/:id',
           icon: <DocumentCheckIcon className="w-4 h-4" />,
-          roles: [ROLES.MAGINV]
+          roles: [ROLES.MAGINV],
+          permission: PERMISSIONS.PERFORM_INVENTORY
         },
         {
           id: 'rapports-inventaire',
           label: 'Rapports',
           path: '/stock/inventaires',
           icon: <ChartPieIcon className="w-4 h-4" />,
-          permission: 'view_inventory_reports',
+          permission: PERMISSIONS.VIEW_INVENTORY_REPORTS,
           roles : [ROLES.MAGASINIER,ROLES.RESP_MAGASIN,ROLES.ADMIN],
         }
       ]
@@ -243,62 +284,56 @@ export const SIDEBAR_CONFIG = {
       id: 'stock',
       label: 'Stock',
       icon: <CubeIcon className="w-5 h-5" />,
-      permission: 'stock',
-      roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT,ROLES.MAGSORT,ROLES.MAGASINIER],
+      permission: PERMISSIONS.STOCK,
+      roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN, ROLES.MAGRECEPT, ROLES.MAGSORT, ROLES.MAGASINIER],
       subItems: [
         {
           id: 'dashboard-stock',
           label: 'Dashboard KPIs',
           path: '/stock/dashboard',
           roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN],
-          icon: <ChartBarIcon className="w-4 h-4" />
+          icon: <ChartBarIcon className="w-4 h-4" />,
+          permission: PERMISSIONS.VIEW_INVENTORY
         },
         {
           id: 'ajustements-stock',
           label: 'Ajustements',
           path: '/stock/ajustements',
           roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN],
-          icon: <ChartPieIcon className="w-4 h-4" />
+          icon: <ChartPieIcon className="w-4 h-4" />,
+          permission: PERMISSIONS.VIEW_INVENTORY
         },
         {
           id: 'entree',
           label: 'Entrer de stock',
           path: '/stock/1',
-          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT],
+          roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN, ROLES.MAGRECEPT],
           icon: <PlusCircleIcon className="w-4 h-4" />,
-          permission: 'enter_stock'
+          permission: PERMISSIONS.ENTER_STOCK
         },
-        {
-          id: 'sortie',
-          label: 'Sortie de stock',
-          path: '/stock/2',
-          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGSORT],
-          icon: <ChartPieIcon className="w-4 h-4" />,
-          permission: 'exit_stock'
-        }
-        ,
         {
           id: 'transfert',
           label: 'Transfert',
           path: '/stock/transfer',
-          roles : [ROLES.RESP_MAGASIN,ROLES.ADMIN,ROLES.MAGRECEPT,ROLES.MAGSORT,ROLES.MAGASINIER],
+          roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN, ROLES.MAGRECEPT, ROLES.MAGSORT, ROLES.MAGASINIER],
           icon: <BuildingOfficeIcon className="w-4 h-4" />,
-          permission: 'transfer_stock'
-        }
-        ,
+          permission: PERMISSIONS.TRANSFER_STOCK
+        },
         {
           id: 'articles-remaining',
           label: 'Articles restants',
           path: '/stock/articles-remaining',
           roles: [ROLES.MAGSORT, ROLES.MAGRECEPT, ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
-          icon: <ListBulletIcon className="w-4 h-4" />
+          icon: <ListBulletIcon className="w-4 h-4" />,
+          permission: PERMISSIONS.VIEW_INVENTORY
         },
         {
-          id: 'demandes-inventaire',
-          label: 'Demandes inventaires',
-          path: '/stock/inventaires',
-          roles: [ROLES.MAGASINIER, ROLES.RESP_MAGASIN, ROLES.ADMIN],
-          icon: <ListBulletIcon className="w-4 h-4" />
+          id: 'sortie',
+          label: 'Sortie de stock',
+          path: '/stock/2',
+          roles: [ROLES.RESP_MAGASIN, ROLES.ADMIN, ROLES.MAGSORT],
+          icon: <ChartPieIcon className="w-4 h-4" />,
+          permission: PERMISSIONS.EXIT_STOCK
         }
       ]
     },
@@ -336,14 +371,27 @@ export const SIDEBAR_CONFIG = {
 
 
 export const canAccessRoute = (routePath, user) => {
-  if (!user || !user.role) return false;
+  console.log("🔍 canAccessRoute called:", { routePath, user });
+  
+  if (!user || !user.role) {
+    console.log("❌ No user or role");
+    return false;
+  }
 
   // Trouver la route dans la configuration
   const route = findRouteByPath(routePath);
-  if (!route) return false;
+  console.log("🗺️ Found route for path", routePath, ":", route);
+  
+  if (!route) {
+    console.log("❌ Route not found");
+    return false;
+  }
 
   // Vérifier l'accès
-  return hasPermissionToItem(route, user);
+  const hasAccess = hasPermissionToItem(route, user);
+  console.log("✅ Access result:", hasAccess);
+  
+  return hasAccess;
 };
 
 export const getAccessibleRoutes = (userRole) => {
@@ -389,10 +437,38 @@ export const useRouteAccess = () => {
     return user ? getAccessibleRoutes(user.role) : [];
   };
 
+  // Fonction de test pour diagnostiquer les problèmes
+  const testRouteAccess = (routePath) => {
+    console.log("🧪 Testing route access for:", routePath);
+    console.log("👤 Current user:", user);
+    
+    if (!user) {
+      console.log("❌ No user found");
+      return { canAccess: false, reason: "No user" };
+    }
+
+    const route = findRouteByPath(routePath);
+    console.log("🗺️ Found route:", route);
+    
+    if (!route) {
+      console.log("❌ Route not found");
+      return { canAccess: false, reason: "Route not found" };
+    }
+
+    const hasAccess = hasPermissionToItem(route, user);
+    return { 
+      canAccess: hasAccess, 
+      route: route,
+      user: user,
+      reason: hasAccess ? "Access granted" : "Access denied"
+    };
+  };
+
   return {
     canAccess,
     getMyAccessibleRoutes,
-    hasAccessToRoute: canAccess // Alias pour plus de clarté
+    hasAccessToRoute: canAccess, // Alias pour plus de clarté
+    testRouteAccess // Fonction de debug
   };
 };
 
@@ -449,26 +525,61 @@ const canAccessItemBasedOnPermission = (item, userRole) => {
 };
 
 const hasPermissionToItem = (item, user) => {
-  console.log("Checking access for item:", item, "and user:", user);
-  if (!user || !user.role) return false;
+  console.log("🔐 hasPermissionToItem:", { 
+    itemId: item.id,
+    itemRoles: item.roles, 
+    itemPermission: item.permission,
+    alwaysVisible: item.alwaysVisible,
+    userRole: user.role 
+  });
+  
+  if (!user || !user.role) {
+    console.log("❌ No user or role in hasPermissionToItem");
+    return false;
+  }
+
+  // Si l'item a la propriété alwaysVisible, on l'autorise
+  if (item.alwaysVisible) {
+    console.log("✅ Always visible item");
+    return true;
+  }
 
   // Vérifier par rôle
-  if (item.roles && item.roles.includes(user.role)) {
-    return true;
+  if (item.roles && item.roles.length > 0) {
+    const hasRole = item.roles.includes(user.role);
+    console.log("🎭 Role check:", { hasRole, requiredRoles: item.roles, userRole: user.role });
+    if (hasRole) return true;
   }
 
   // Vérifier par permission
   if (item.permission) {
-    return hasRolePermission(user.role, item.permission);
+    const hasPermission = hasRolePermission(user.role, item.permission);
+    console.log("🔑 Permission check:", { hasPermission, requiredPermission: item.permission });
+    if (hasPermission) return true;
   }
 
   // Si ni rôle ni permission spécifiés, accessible à tous les utilisateurs connectés
-  return true;
+  if (!item.roles && !item.permission) {
+    console.log("✅ No restrictions, allowing access");
+    return true;
+  }
+
+  console.log("❌ Access denied");
+  return false;
 };
 
 // Cette fonction dépend de votre système de permissions
 const hasRolePermission = (role, permission) => {
+  console.log("🔍 hasRolePermission check:", { role, permission });
+  
   const roleKey = role ? role.toString().toUpperCase() : null;
+  console.log("🎭 Role key:", roleKey);
+  
   const permissions = ROLE_PERMISSIONS[roleKey] || [];
-  return permissions.includes(permission);
+  console.log("📋 Available permissions for role:", permissions);
+  
+  const hasPermission = permissions.includes(permission);
+  console.log("✅ Permission result:", hasPermission);
+  
+  return hasPermission;
 };

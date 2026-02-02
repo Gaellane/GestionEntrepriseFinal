@@ -1,12 +1,18 @@
 package com.app.gestion.service;
 
 import com.app.gestion.model.*;
+import com.app.gestion.model.enums.StatutLot;
 import com.app.gestion.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.app.gestion.model.Utilisateur;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +32,8 @@ public class StockReservationService {
     private final LotRepository lotRepository;
     private final VenteRepository venteRepository;
     private final VenteLigneRepository venteLigneRepository;
+    private final LotService lotService;
+    private final LotValidationService lotValidationService;
 
     /**
      * 3.4 - Calculer le stock théorique (somme des quantités restantes dans les
@@ -127,36 +135,104 @@ public class StockReservationService {
             quantitesParArticle.merge(articleId, quantite, Double::sum);
         }
 
-        // Créer une réservation par article
+        // Créer une réservation par article en utilisant la sélection de lots du LotService
         int index = 0;
         for (Map.Entry<Integer, Double> entry : quantitesParArticle.entrySet()) {
             Integer articleId = entry.getKey();
             Double quantiteTotale = entry.getValue();
 
             Article article = lignes.stream()
-                    .filter(l -> l.getArticle().getId().equals(articleId))
-                    .findFirst()
-                    .map(VenteLigne::getArticle)
-                    .orElseThrow(() -> new RuntimeException("Article non trouvé: " + articleId));
+                .filter(l -> l.getArticle().getId().equals(articleId))
+                .findFirst()
+                .map(VenteLigne::getArticle)
+                .orElseThrow(() -> new RuntimeException("Article non trouvé: " + articleId));
+
+            // Vérifier et récupérer les lots candidats via LotService
+            List<Lot> candidateLots;
+            try {
+                candidateLots = lotService.getLotsByMethod(articleId, depotId, quantiteTotale);
+                log.debug("Lots candidats trouvés pour article {} (dépôt {}): {} lots", articleId, depotId, candidateLots.size());
+            } catch (Exception e) {
+                log.error("Erreur lors de la sélection des lots pour article {} (dépôt {}): {}", articleId, depotId, e.getMessage());
+                throw new RuntimeException("Erreur sélection lots pour article " + article.getArticleNom() + ": " + e.getMessage(), e);
+            }
+
+            // Utiliser la date effective de la vente comme référence pour validation des lots
+            // Convertir en LocalDateTime (début de journée) pour compatibilité avec LotValidationService
+            LocalDateTime validationDate = vente.getDateEffective() != null ? vente.getDateEffective().atStartOfDay() : LocalDateTime.now();
+
+            // Récupérer l'ID de l'utilisateur connecté (peut être null lors d'appels automatiques)
+            Integer currentUserId = null;
+            try {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.getPrincipal() instanceof Utilisateur) {
+                    currentUserId = ((Utilisateur) authentication.getPrincipal()).getId();
+                }
+            } catch (Exception e) {
+                log.debug("Impossible de récupérer l'utilisateur courant pour la validation des lots: {}", e.getMessage());
+            }
+
+            // Appeler le service de validation pour bloquer les lots périmés selon la dateEffective
+            for (Lot lot : candidateLots) {
+                try {
+                    lotValidationService.verifierEtBloquerLot(lot, validationDate, currentUserId);
+                } catch (Exception e) {
+                    log.warn("Erreur lors de la validation automatique du lot {}: {}", lot.getId(), e.getMessage());
+                }
+            }
+
+            // Vérifier que les lots sont utilisables (non bloqués au moment de la dateEffective, non périmés, etc.)
+            List<Lot> lotsUtilisables = candidateLots.stream()
+                .filter(lot -> lot.getQuantiteRestante() > 0)
+                .filter(lot -> lot.getDatePeremption() == null || lot.getDatePeremption().isAfter(validationDate))
+                .filter(lot -> {
+                    // Exclure les lots bloqués ou marqués périmés (DLC/DLUO)
+                    if (lot.getStatutLot() == null) return true;
+                    return lot.getStatutLot() != StatutLot.BLOQUE
+                            && lot.getStatutLot() != StatutLot.EXPIRE_DLC
+                            && lot.getStatutLot() != StatutLot.EXPIRE_DLUO;
+                })
+                .toList();
+
+            if (lotsUtilisables.size() != candidateLots.size()) {
+                log.warn("Certains lots candidats pour article {} ne sont pas utilisables: {} candidats, {} utilisables", 
+                        article.getArticleNom(), candidateLots.size(), lotsUtilisables.size());
+            }
+
+            double totalAvail = lotsUtilisables.stream().mapToDouble(l -> l.getQuantiteRestante()).sum();
+            if (totalAvail < quantiteTotale) {
+                String msg = String.format("Stock utilisable insuffisant pour article %s (dépôt %d) - disponible: %.2f, demandé: %.2f",
+                        article.getArticleNom(), depotId, totalAvail, quantiteTotale);
+                log.warn(msg);
+                throw new RuntimeException(msg);
+            }
+
+            log.info("Vérification des lots OK pour article {} - {} lots utilisables sur {} candidats, quantité disponible: %.2f",
+                    article.getArticleNom(), lotsUtilisables.size(), candidateLots.size(), totalAvail);
 
             // Référence unique par article: VENTE-CMD-...-001, -002, etc.
             String refArticle = reference + "-" + String.format("%03d", ++index);
 
             StockReservation reservation = StockReservation.builder()
-                    .reference(refArticle)
-                    .dateEntree(LocalDateTime.now())
-                    .article(article)
-                    .quantite(quantiteTotale)
-                    .process(processReservee)
-                    .build();
+                .reference(refArticle)
+                .dateEntree(LocalDateTime.now())
+                .article(article)
+                .quantite(quantiteTotale)
+                .process(processReservee)
+                .build();
 
             StockReservation savedReservation = stockReservationRepository.save(reservation);
+            log.debug("StockReservation sauvegardée en base: ID={}, référence={}", savedReservation.getId(), refArticle);
 
             // 3.3 - Historiser la création de la réservation
             historiserChangementStatut(savedReservation, processReservee);
 
-            log.info("Réservation créée: {} pour article {} - quantité: {}",
-                    refArticle, article.getArticleNom(), quantiteTotale);
+            // Log des lots utilisables associés (traçabilité)
+            String lotIds = lotsUtilisables.stream()
+                .map(l -> String.format("%d(%.2f)", l.getId(), l.getQuantiteRestante()))
+                .reduce((a, b) -> a + "," + b).orElse("");
+            log.info("Réservation créée et persistée: {} pour article {} - quantité: {} - lots utilisables: [{}]",
+                refArticle, article.getArticleNom(), quantiteTotale, lotIds);
         }
     }
 
@@ -228,6 +304,8 @@ public class StockReservationService {
                 .build();
 
         stockReservationHistoriqueRepository.save(historique);
+        log.debug("Historique créé pour réservation {} - processus: {} (valeur: {})", 
+                 reservation.getReference(), nouveauProcess.getProcessName(), nouveauProcess.getValeur());
     }
 
     /**
@@ -250,5 +328,27 @@ public class StockReservationService {
         }
 
         log.info("Réservations libérées pour vente {}: {} réservations", vente.getRefe(), reservations.size());
+    }
+
+    /**
+     * Marquer toutes les réservations d'une vente comme consommées (valeur 30)
+     */
+    @Transactional
+    public void consommerReservationsVente(Integer venteId) {
+        Vente vente = venteRepository.findById(venteId)
+                .orElseThrow(() -> new RuntimeException("Vente non trouvée: " + venteId));
+
+        String referencePrefix = "VENTE-" + vente.getRefe();
+        List<StockReservation> reservations = stockReservationRepository.findByReferenceStartingWith(referencePrefix);
+
+        int count = 0;
+        for (StockReservation reservation : reservations) {
+            if (reservation.getProcess().getValeur() != 30 && reservation.getProcess().getValeur() != 99) {
+                changerStatutReservation(reservation.getId(), 30, "Consommation suite à validation vente");
+                count++;
+            }
+        }
+
+        log.info("{} réservations consommées pour vente {}", count, vente.getRefe());
     }
 }

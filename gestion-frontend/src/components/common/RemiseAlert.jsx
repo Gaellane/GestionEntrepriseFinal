@@ -19,10 +19,18 @@ const RemiseAlert = ({ remisePourcentage, onRemiseMaxChange }) => {
         }
     }, [remiseMax, onRemiseMaxChange]);
 
+    console.log(remiseMax);
+
     const fetchRemiseMax = async () => {
         try {
             setLoading(true);
-            const response = await configurationApi.getRemiseMaxByRole(user.role.roleCode);
+
+            
+            // Déterminer le roleCode basé sur la structure de l'utilisateur
+            const roleCode = user.role?.roleCode || user.role || 'USER';
+            console.log("📋 Using roleCode:", roleCode);
+            
+            const response = await configurationApi.getRemiseMaxByRole(roleCode);
             setRemiseMax(response.remiseMax);
         } catch (err) {
             console.error('Error fetching remise max:', err);

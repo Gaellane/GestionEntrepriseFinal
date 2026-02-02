@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getVentesAPreparer, getLotsDisponibles, creerLivraison } from '../../api/livraisonApi';
+import { getVenteById } from '../../api/venteApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const LivraisonForm = () => {
@@ -30,14 +31,16 @@ const LivraisonForm = () => {
         }
     };
 
-    const handleSelectVente = async (vente) => {
-        setSelectedVente(vente);
+    const handleSelectVente = async (venteSummary) => {
         setLoading(true);
-
         try {
+            // Récupérer les détails complets de la vente (lignes)
+            const fullVente = await getVenteById(venteSummary.venteId);
+            setSelectedVente(fullVente);
+
             // Charger les lots disponibles pour chaque ligne
             const lignesAvecLots = await Promise.all(
-                vente.lignes.map(async (ligne) => {
+                fullVente.lignes.map(async (ligne) => {
                     const lots = await getLotsDisponibles(ligne.id, methode);
                     return {
                         ...ligne,
@@ -47,8 +50,9 @@ const LivraisonForm = () => {
                 })
             );
             setLignesLivraison(lignesAvecLots);
+            setError(null);
         } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors du chargement des lots');
+            setError(err?.data?.message || err?.message || 'Erreur lors du chargement des lots');
         } finally {
             setLoading(false);
         }
@@ -97,8 +101,10 @@ const LivraisonForm = () => {
 
         setSubmitting(true);
         try {
-            const lignesData = lignesLivraison.map(ligne => ({
-                venteLigneId: ligne.id,
+            const lignesData = lignesLivraison.map((ligne, idx) => ({
+                id: ligne.id,
+                articleId: ligne.articleId || (ligne.article ? ligne.article.id : null),
+                quantite: getQuantiteSelectionnee(idx),
                 lots: ligne.lotSelections
             }));
 
@@ -152,19 +158,19 @@ const LivraisonForm = () => {
                                 Aucune commande à préparer
                             </div>
                         ) : (
-                            ventesAPreparer.map((vente) => (
+                            ventesAPreparer.map((vente, vIndex) => (
                                 <div
-                                    key={vente.id}
+                                    key={vente.venteId ?? vente.venteRefe ?? vIndex}
                                     className="p-4 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
                                     onClick={() => handleSelectVente(vente)}
                                 >
                                     <div>
-                                        <div className="font-medium">{vente.refe}</div>
+                                        <div className="font-medium">{vente.venteRefe}</div>
                                         <div className="text-sm text-gray-600">
                                             Client: {vente.clientNom}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            Livraison prévue: {new Date(vente.dateLivraison).toLocaleDateString('fr-FR')}
+                                            Livraison prévue: {vente.dateLivraison ? new Date(vente.dateLivraison).toLocaleDateString('fr-FR') : ''}
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -172,7 +178,7 @@ const LivraisonForm = () => {
                                             {vente.prixTotal?.toLocaleString('fr-FR')} Ar
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {vente.lignes?.length || 0} article(s)
+                                            {vente.nombreLignes || 0} article(s)
                                         </div>
                                     </div>
                                 </div>
@@ -215,7 +221,7 @@ const LivraisonForm = () => {
                         ) : (
                             <div className="p-4 space-y-6">
                                 {lignesLivraison.map((ligne, ligneIndex) => (
-                                    <div key={ligne.id} className="border rounded-lg p-4">
+                                    <div key={ligne.id ?? `ligne-${ligneIndex}`} className="border rounded-lg p-4">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="font-medium">{ligne.articleNom}</h3>
@@ -256,11 +262,11 @@ const LivraisonForm = () => {
                                                                 Aucun lot disponible pour cet article
                                                             </td>
                                                         </tr>
-                                                    ) : (
-                                                        ligne.lotsDisponibles?.map((lot) => {
+                                                        ) : (
+                                                        ligne.lotsDisponibles?.map((lot, lotIndex) => {
                                                             const selection = ligne.lotSelections.find(s => s.lotId === lot.lotId);
                                                             return (
-                                                                <tr key={lot.lotId} className="border-t">
+                                                                <tr key={lot.lotId ?? `lot-${lotIndex}`} className="border-t">
                                                                     <td className="px-3 py-2">{lot.lotRefe}</td>
                                                                     <td className="px-3 py-2">{lot.depotNom}</td>
                                                                     <td className="px-3 py-2 text-right">{lot.quantiteDisponible}</td>
@@ -279,7 +285,7 @@ const LivraisonForm = () => {
                                                                             onChange={(e) => handleLotSelection(
                                                                                 ligneIndex,
                                                                                 lot.lotId,
-                                                                                parseInt(e.target.value) || 0
+                                                                                parseFloat(e.target.value) || 0
                                                                             )}
                                                                             className="w-24 px-2 py-1 border rounded text-center"
                                                                         />

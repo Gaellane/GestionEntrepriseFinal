@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getVenteById, deleteVente } from '../../api/venteApi';
+import { getVenteById, deleteVente, validerCommande, annulerCommande } from '../../api/venteApi';
+import { getMouvementsByVente } from '../../api/caisseMouvementApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -9,8 +10,10 @@ const VenteDetail = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [vente, setVente] = useState(null);
+    const [mouvements, setMouvements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         loadVente();
@@ -21,6 +24,16 @@ const VenteDetail = () => {
         try {
             const data = await getVenteById(id);
             setVente(data);
+            
+            // Charger les mouvements de caisse liés
+            try {
+                const mouvementsData = await getMouvementsByVente(id);
+                setMouvements(mouvementsData);
+            } catch (err) {
+                console.warn('Erreur lors du chargement des mouvements:', err);
+                setMouvements([]);
+            }
+            
             setError(null);
         } catch (err) {
             setError(err.response?.data?.message || 'Erreur lors du chargement de la commande');
@@ -43,6 +56,41 @@ const VenteDetail = () => {
     };
 
     const canDelete = user?.role?.roleCode === 'ADMIN';
+    const canValidate = user?.role === 'RESP_VENTE' || user?.role === 'ADMIN';
+    const canCancel = canValidate;
+    // Une commande est considérée validée si son process.value >= 60 (Confirmée ou plus)
+    const isValidated = typeof vente?.processValeur === 'number'
+        ? vente.processValeur >= 60
+        : (vente?.processName && vente.processName.toLowerCase().includes('confirm'));
+
+    const handleValidate = async () => {
+        if (!window.confirm('Confirmer la validation commerciale de cette commande ?')) return;
+        setActionLoading(true);
+        try {
+            await validerCommande(id);
+            await loadVente();
+            alert('Commande validée.');
+        } catch (err) {
+            alert(err.response?.data?.message || err.response?.data?.data?.detail || 'Erreur lors de la validation');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleAnnuler = async () => {
+        const motif = window.prompt('Motif d\'annulation (obligatoire) :');
+        if (!motif) return alert('Le motif est requis pour annuler.');
+        setActionLoading(true);
+        try {
+            await annulerCommande(id, motif);
+            await loadVente();
+            alert('Commande annulée.');
+        } catch (err) {
+            alert(err.response?.data?.message || err.response?.data?.data?.detail || 'Erreur lors de l\'annulation');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     if (loading) return <LoadingSpinner />;
     if (error) {
@@ -69,6 +117,11 @@ const VenteDetail = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">{vente.refe}</h1>
                     <p className="text-gray-600 mt-1">Commande Client</p>
+                    {vente.processName && (
+                        <div className="mt-2 inline-block px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-800">
+                            Statut: {vente.processName}
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -77,6 +130,32 @@ const VenteDetail = () => {
                     >
                         Modifier
                     </button>
+                    {canValidate && !isValidated && (
+                        <button
+                            onClick={handleValidate}
+                            disabled={actionLoading}
+                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                            Valider
+                        </button>
+                    )}
+                    {isValidated && (
+                        <button
+                            onClick={() => navigate(`/caisse/mouvements/creer?venteId=${id}&montant=${vente.prixTotal}`)}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                        >
+                            Payer
+                        </button>
+                    )}
+                    {canCancel && !isValidated && (
+                        <button
+                            onClick={handleAnnuler}
+                            disabled={actionLoading}
+                            className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                        >
+                            Annuler
+                        </button>
+                    )}
                     {canDelete && (
                         <button
                             onClick={handleDelete}
@@ -200,15 +279,15 @@ const VenteDetail = () => {
                                     <td className="px-4 py-3">{ligne.articleNom}</td>
                                     <td className="px-4 py-3 text-gray-600">{ligne.articleReference}</td>
                                     <td className="px-4 py-3 text-right">{ligne.quantite}</td>
-                                    <td className="px-4 py-3 text-right">{ligne.prixUnitaire?.toFixed(2)} €</td>
+                                    <td className="px-4 py-3 text-right">{ligne.prixUnitaire?.toFixed(2)} Ar</td>
                                     <td className="px-4 py-3 text-right text-red-600">
                                         {ligne.remisePourcentage > 0 ? `${ligne.remisePourcentage}%` : '-'}
                                     </td>
                                     <td className="px-4 py-3 text-right text-red-600">
-                                        {ligne.remiseFixe > 0 ? `${ligne.remiseFixe.toFixed(2)} €` : '-'}
+                                        {ligne.remiseFixe > 0 ? `${ligne.remiseFixe.toFixed(2)} Ar` : '-'}
                                     </td>
                                     <td className="px-4 py-3 text-right font-medium">
-                                        {ligne.montantNet?.toFixed(2)} €
+                                        {ligne.montantNet?.toFixed(2)} Ar
                                     </td>
                                 </tr>
                             ))}
@@ -223,15 +302,15 @@ const VenteDetail = () => {
                 <div className="max-w-md ml-auto space-y-2">
                     <div className="flex justify-between">
                         <span className="text-gray-600">Montant Brut:</span>
-                        <span className="font-medium">{vente.montantBrutTotal?.toFixed(2)} €</span>
+                        <span className="font-medium">{vente.montantBrutTotal?.toFixed(2)} Ar</span>
                     </div>
                     <div className="flex justify-between text-red-600">
                         <span>Remises sur Lignes:</span>
-                        <span>-{vente.montantRemiseLignes?.toFixed(2)} €</span>
+                        <span>-{vente.montantRemiseLignes?.toFixed(2)} Ar</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                         <span className="text-gray-600">Sous-total:</span>
-                        <span className="font-medium">{vente.sousTotal?.toFixed(2)} €</span>
+                        <span className="font-medium">{vente.sousTotal?.toFixed(2)} Ar</span>
                     </div>
                     {(vente.remisePourcentage > 0 || vente.remiseFixe > 0) && (
                         <>
@@ -240,36 +319,79 @@ const VenteDetail = () => {
                                     <div>Remise globale: {vente.remisePourcentage}%</div>
                                 )}
                                 {vente.remiseFixe > 0 && (
-                                    <div>Remise fixe: {vente.remiseFixe.toFixed(2)} €</div>
+                                    <div>Remise fixe: {vente.remiseFixe.toFixed(2)} Ar</div>
                                 )}
                             </div>
                             <div className="flex justify-between text-red-600">
                                 <span>Remise Globale:</span>
-                                <span>-{vente.montantRemiseGlobale?.toFixed(2)} €</span>
+                                <span>-{vente.montantRemiseGlobale?.toFixed(2)} Ar</span>
                             </div>
                         </>
                     )}
                     <div className="flex justify-between border-t pt-2">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-medium">{vente.montantAvantTVA?.toFixed(2)} €</span>
+                        <span className="font-medium">{vente.montantAvantTVA?.toFixed(2)} Ar</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({vente.tauxTVA}%):</span>
-                        <span>{vente.montantTVA?.toFixed(2)} €</span>
+                        <span>{vente.montantTVA?.toFixed(2)} Ar</span>
                     </div>
                     <div className="flex justify-between border-t-2 border-gray-300 pt-2 text-lg font-bold">
                         <span>Total TTC:</span>
-                        <span className="text-blue-600">{vente.prixTotal?.toFixed(2)} €</span>
+                        <span className="text-blue-600">{vente.prixTotal?.toFixed(2)} Ar</span>
                     </div>
                 </div>
             </div>
 
-            {/* Statut */}
-            {vente.processName && (
-                <div className="mt-6 bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900">Statut</h2>
-                    <div className="inline-flex px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-semibold">
-                        {vente.processName}
+            {/* Mouvements de caisse */}
+            {mouvements.length > 0 && (
+                <div className="bg-white p-6 rounded-lg shadow mt-6">
+                    <h2 className="text-lg font-semibold mb-4 text-gray-900">Mouvements de Caisse</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Date
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Type
+                                    </th>
+                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        Montant
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Détails
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {mouvements.map((mouvement) => (
+                                    <tr key={mouvement.id}>
+                                        <td className="px-4 py-3 text-sm">
+                                            {new Date(mouvement.dateEntree).toLocaleString('fr-FR')}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                                mouvement.typeMouvement?.valeur > 0 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {mouvement.typeMouvement?.typeName || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className={`px-4 py-3 text-sm text-right font-medium ${
+                                            mouvement.montant >= 0 ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                            {mouvement.montant?.toFixed(2)} Ar
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">
+                                            {mouvement.details}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}

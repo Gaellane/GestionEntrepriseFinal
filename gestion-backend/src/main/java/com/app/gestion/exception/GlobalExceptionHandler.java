@@ -73,10 +73,17 @@ public class GlobalExceptionHandler {
     /* ===================== MÉTHODES UTILITAIRES ===================== */
 
     private ResponseEntity<ApiResponse<Object>> buildError(HttpStatus status, Exception ex) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("exception", ex.getClass().getSimpleName());
+        payload.put("detail", getRootCauseMessage(ex));
+        if (debugExceptions) {
+            payload.put("stackTrace", getStackTrace(ex));
+        }
+
         ApiResponse<Object> body = new ApiResponse<>(
                 false,
                 ex.getMessage(),
-                debugExceptions ? buildDebugData(ex) : null
+                payload
         );
         return ResponseEntity.status(status).body(body);
     }
@@ -94,5 +101,13 @@ public class GlobalExceptionHandler {
             sb.append(el).append("\n");
         }
         return sb.toString();
+    }
+
+    private String getRootCauseMessage(Throwable ex) {
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root.getMessage() != null ? root.getMessage() : ex.getMessage();
     }
 }

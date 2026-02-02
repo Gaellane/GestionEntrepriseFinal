@@ -31,6 +31,26 @@ export const changerStatut = async (id, action, motif = '') => {
     return res.data;
 };
 
+export const envoyerProforma = async (id) => {
+    const res = await api.post(`/proforma-ventes/${id}/envoyer`);
+    return res.data;
+};
+
+export const accepterProforma = async (id, motif = '') => {
+    const res = await api.post(`/proforma-ventes/${id}/accepter`, motif);
+    return res.data;
+};
+
+export const refuserProforma = async (id, motif = '') => {
+    const res = await api.post(`/proforma-ventes/${id}/refuser`, motif);
+    return res.data;
+};
+
+export const transformerEnVente = async (id) => {
+    const res = await api.post(`/proforma-ventes/${id}/transformer`);
+    return res.data;
+};
+
 export const validerRemiseExceptionnelle = async (id, motif = '') => {
     // Use api.post (JSON) for now; backend should accept or this can be adjusted to use text/plain fetch if required
     const res = await api.post(`/proforma-ventes/${id}/valider-remise`, motif);
@@ -44,6 +64,10 @@ export const proformaVenteApi = {
     updateProformaVente,
     deleteProformaVente,
     changerStatut,
+    envoyerProforma,
+    accepterProforma,
+    refuserProforma,
+    transformerEnVente,
     validerRemiseExceptionnelle
 };
 

@@ -40,4 +40,6 @@ public class ProformaVenteResponseDto {
     // Process
     private Integer processId;
     private String processName;
+    private Integer processValeur;
+    private String processAbreviation;
 }

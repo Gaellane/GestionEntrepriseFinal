@@ -60,6 +60,8 @@ public class ConfigurationService {
         String configKey;
         switch (roleCode) {
             case "RESP_VENTE":
+                configKey = "REMISE_MAX_RESPONSABLE";
+                break;
             case "RESP_ACHAT":
             case "RESP_MAGASIN":
             case "RESP_FINANCE":

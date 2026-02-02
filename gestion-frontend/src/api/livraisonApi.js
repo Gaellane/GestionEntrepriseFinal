@@ -8,7 +8,7 @@ import api from './index';
  * Récupérer les ventes à préparer (confirmées)
  */
 export const getVentesAPreparer = async () => {
-    const response = await api.get('/livraisons-vente/a-preparer');
+    const response = await api.get('/livraisons/ventes-a-preparer');
     return response.data;
 };
 
@@ -18,7 +18,7 @@ export const getVentesAPreparer = async () => {
  * @param {string} methode - FIFO ou FEFO
  */
 export const getLotsDisponibles = async (venteLigneId, methode = 'FIFO') => {
-    const response = await api.get(`/livraisons-vente/lots-disponibles/${venteLigneId}`, {
+    const response = await api.get(`/livraisons/lignes/${venteLigneId}/lots-disponibles`, {
         params: { methode }
     });
     return response.data;
@@ -30,7 +30,7 @@ export const getLotsDisponibles = async (venteLigneId, methode = 'FIFO') => {
  * @param {Array} lignes - Lignes de livraison avec lots
  */
 export const creerLivraison = async (venteId, lignes) => {
-    const response = await api.post(`/livraisons-vente/creer/${venteId}`, { lignes });
+    const response = await api.post(`/livraisons`, { venteId, lignes });
     return response.data;
 };
 
@@ -39,7 +39,7 @@ export const creerLivraison = async (venteId, lignes) => {
  */
 export const getAllLivraisons = async (params = {}) => {
     const { page = 0, size = 10, sort = 'dateEntree,desc' } = params;
-    const response = await api.get('/livraisons-vente', {
+    const response = await api.get('/livraisons', {
         params: { page, size, sort }
     });
     return response.data;
@@ -49,7 +49,7 @@ export const getAllLivraisons = async (params = {}) => {
  * Récupérer une livraison par ID
  */
 export const getLivraisonById = async (id) => {
-    const response = await api.get(`/livraisons-vente/${id}`);
+    const response = await api.get(`/livraisons/${id}`);
     return response.data;
 };
 
@@ -57,7 +57,7 @@ export const getLivraisonById = async (id) => {
  * Valider une livraison (marquer comme livrée)
  */
 export const validerLivraison = async (id) => {
-    const response = await api.put(`/livraisons-vente/${id}/valider`);
+    const response = await api.put(`/livraisons/${id}/valider`);
     return response.data;
 };
 
@@ -65,7 +65,7 @@ export const validerLivraison = async (id) => {
  * Annuler une livraison
  */
 export const annulerLivraison = async (id, motif) => {
-    const response = await api.put(`/livraisons-vente/${id}/annuler`, { motif });
+    const response = await api.put(`/livraisons/${id}/annuler`, { motif });
     return response.data;
 };
 
@@ -73,6 +73,6 @@ export const annulerLivraison = async (id, motif) => {
  * Récupérer les livraisons par vente
  */
 export const getLivraisonsByVente = async (venteId) => {
-    const response = await api.get(`/livraisons-vente/vente/${venteId}`);
+    const response = await api.get(`/livraisons/vente/${venteId}`);
     return response.data;
 };

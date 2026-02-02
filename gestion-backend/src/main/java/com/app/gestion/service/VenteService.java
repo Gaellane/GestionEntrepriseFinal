@@ -39,8 +39,10 @@ public class VenteService {
     private final ConfigurationRepository configurationRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final StockReservationService stockReservationService;
+    private final LotService lotService;
     private final VenteHistoriqueRepository venteHistoriqueRepository;
+    private final EntityDepotRepository entityDepotRepository;
+    private final StockReservationService stockReservationService;
 
     @Transactional(readOnly = true)
     public Page<VenteResponseDto> getAllVentes(Pageable pageable) {
@@ -64,10 +66,7 @@ public class VenteService {
         ProformaVente proforma = proformaVenteRepository.findById(proformaId)
                 .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé"));
 
-        // Vérifier que le pro-forma est accepté
-        if (proforma.getProcess().getValeur() != 30) {
-            throw new RuntimeException("Seul un pro-forma accepté peut être transformé en commande");
-        }
+
 
         // Récupérer le processus initial de vente (le premier)
         VenteProcess process = venteProcessRepository.findAll().stream()
@@ -80,35 +79,36 @@ public class VenteService {
         // Récupérer le taux de TVA
         Double tauxTVA = getTauxTVA();
 
-        // Créer la vente en copiant les données du pro-forma
-        Vente vente = Vente.builder()
-                // .client(proforma.getClient())
-                .proforma(proforma)
-                .process(process)
-                .refe(reference)
-                .dateEntree(LocalDateTime.now())
-                .dateEffective(requestDto.getDateEffective())
-                .dateLivraison(requestDto.getDateLivraison())
-                .locationLivraison(requestDto.getLocationLivraison())
-                .remisePourcentage(proforma.getRemisePourcentage())
-                .remiseFixe(proforma.getRemiseFixe())
-                .build();
+        // Créer la vente en copiant les données du pro-forma (instancier avec setters)
+        Vente vente = new Vente();
+        vente.setClient(proforma.getClient());
+        vente.setProforma(proforma);
+        vente.setProcess(process);
+        vente.setRefe(reference);
+        vente.setDateEntree(LocalDateTime.now());
+        vente.setDateEffective(requestDto.getDateEffective());
+        vente.setDateLivraison(requestDto.getDateLivraison());
+        vente.setLocationLivraison(requestDto.getLocationLivraison() != null ? requestDto.getLocationLivraison() : "");
+        vente.setRemisePourcentage(proforma.getRemisePourcentage());
+        vente.setRemiseFixe(proforma.getRemiseFixe());
+        vente.setPrixTotal(proforma.getPrixTotal()); // Copier le prix total du proforma
 
         // Sauvegarder la vente
         Vente savedVente = venteRepository.save(vente);
 
-        // Copier les lignes du pro-forma
+        // Copier les lignes du pro-forma (instancier avec setters)
         List<VenteLigne> lignes = new ArrayList<>();
-        for (ProformaVenteLigne proformaLigne : proforma.getProformaVenteLignes()) {
-            VenteLigne ligne = VenteLigne.builder()
-                    .vente(savedVente)
-                    .article(proformaLigne.getArticle())
-                    .quantite(proformaLigne.getQuantite())
-                    .prixUnitaire(proformaLigne.getPrixUnitaire())
-                    .remisePourcentage(proformaLigne.getRemisePourcentage())
-                    .remiseFixe(proformaLigne.getRemiseFixe())
-                    .build();
-            lignes.add(ligne);
+        if (proforma.getProformaVenteLignes() != null) {
+            for (ProformaVenteLigne proformaLigne : proforma.getProformaVenteLignes()) {
+                VenteLigne ligne = new VenteLigne();
+                ligne.setVente(savedVente);
+                ligne.setArticle(proformaLigne.getArticle());
+                ligne.setQuantite(proformaLigne.getQuantite());
+                ligne.setPrixUnitaire(proformaLigne.getPrixUnitaire());
+                ligne.setRemisePourcentage(proformaLigne.getRemisePourcentage());
+                ligne.setRemiseFixe(proformaLigne.getRemiseFixe());
+                lignes.add(ligne);
+            }
         }
 
         venteLigneRepository.saveAll(lignes);
@@ -119,9 +119,12 @@ public class VenteService {
         savedVente.setPrixTotal(prixTotal);
         savedVente = venteRepository.save(savedVente);
 
-        // 3.3 & 3.4 - Vérification et réservation automatique de stock
-        Integer depotPrincipal = 1; // TODO: À paramétrer
-        verifierEtReserverStock(savedVente.getId(), depotPrincipal);
+        // 3.3 & 3.4 - Historiser création et création des réservations de stock
+        historiserChangementStatut(savedVente, process);
+        Integer depotPrincipal = getDepotIdForCurrentUser();
+        // Créer des enregistrements de réservation de stock et historiser
+        stockReservationService.reserverStockPourVente(savedVente.getId(), depotPrincipal);
+        log.info("Réservations de stock créées pour vente {} (dépôt {})", savedVente.getRefe(), depotPrincipal);
 
         // Journalisation
         String details = String.format("Création commande depuis pro-forma %s", proforma.getRefe());
@@ -135,6 +138,11 @@ public class VenteService {
      */
     @Transactional
     public VenteResponseDto createDirectVente(VenteRequestDto requestDto) {
+        // Validation des lignes pour les ventes directes
+        if (requestDto.getLignes() == null || requestDto.getLignes().isEmpty()) {
+            throw new RuntimeException("Au moins une ligne est requise pour une vente directe");
+        }
+        
         // Validation du client
         Client client = clientRepository.findById(requestDto.getClientId())
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
@@ -152,38 +160,40 @@ public class VenteService {
 
         // Créer la vente
         Vente vente = Vente.builder()
-                // .client(client)
+                .client(client)
                 .proforma(null) // Création directe
                 .process(process)
                 .refe(reference)
                 .dateEntree(LocalDateTime.now())
                 .dateEffective(requestDto.getDateEffective())
                 .dateLivraison(requestDto.getDateLivraison())
-                .locationLivraison(requestDto.getLocationLivraison())
+                .locationLivraison(requestDto.getLocationLivraison() != null ? requestDto.getLocationLivraison() : "")
                 .remisePourcentage(requestDto.getRemisePourcentage() != null ? requestDto.getRemisePourcentage() : 0.0)
                 .remiseFixe(requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0)
+                .prixTotal(0.0) // Initialiser à 0.0 pour éviter la contrainte NOT NULL
                 .build();
 
         // Sauvegarder la vente
         Vente savedVente = venteRepository.save(vente);
 
-        // Créer les lignes
+        // Créer les lignes (instancier avec setters)
         List<VenteLigne> lignes = new ArrayList<>();
-        for (VenteLigneDto ligneDto : requestDto.getLignes()) {
+        if (requestDto.getLignes() != null) {
+            for (VenteLigneDto ligneDto : requestDto.getLignes()) {
             Article article = articleRepository.findById(ligneDto.getArticleId())
-                    .orElseThrow(
-                            () -> new RuntimeException("Article non trouvé avec l'id: " + ligneDto.getArticleId()));
+                .orElseThrow(
+                    () -> new RuntimeException("Article non trouvé avec l'id: " + ligneDto.getArticleId()));
 
-            VenteLigne ligne = VenteLigne.builder()
-                    .vente(savedVente)
-                    .article(article)
-                    .quantite(ligneDto.getQuantite())
-                    .prixUnitaire(ligneDto.getPrixUnitaire())
-                    .remisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0)
-                    .remiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0)
-                    .build();
+            VenteLigne ligne = new VenteLigne();
+            ligne.setVente(savedVente);
+            ligne.setArticle(article);
+            ligne.setQuantite(ligneDto.getQuantite());
+            ligne.setPrixUnitaire(ligneDto.getPrixUnitaire());
+            ligne.setRemisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0);
+            ligne.setRemiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0);
 
             lignes.add(ligne);
+            }
         }
 
         venteLigneRepository.saveAll(lignes);
@@ -194,9 +204,11 @@ public class VenteService {
         savedVente.setPrixTotal(prixTotal);
         savedVente = venteRepository.save(savedVente);
 
-        // 3.3 & 3.4 - Vérification et réservation automatique de stock
-        Integer depotPrincipal = 1; // TODO: À paramétrer
-        verifierEtReserverStock(savedVente.getId(), depotPrincipal);
+        // 3.3 & 3.4 - Historiser création et création des réservations de stock
+        historiserChangementStatut(savedVente, process);
+        Integer depotPrincipal = getDepotIdForCurrentUser();
+        stockReservationService.reserverStockPourVente(savedVente.getId(), depotPrincipal);
+        log.info("Réservations de stock créées pour vente directe {} (dépôt {})", savedVente.getRefe(), depotPrincipal);
 
         // Journalisation
         logAction("CREATE", null, savedVente, "Création commande directe");
@@ -206,6 +218,11 @@ public class VenteService {
 
     @Transactional
     public VenteResponseDto updateVente(Integer id, VenteRequestDto requestDto) {
+        // Validation des lignes pour les mises à jour
+        if (requestDto.getLignes() == null || requestDto.getLignes().isEmpty()) {
+            throw new RuntimeException("Au moins une ligne est requise pour la mise à jour");
+        }
+        
         Vente existingVente = venteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée avec l'id: " + id));
 
@@ -400,10 +417,10 @@ public class VenteService {
                 .dateEffective(vente.getDateEffective())
                 .dateLivraison(vente.getDateLivraison())
                 .locationLivraison(vente.getLocationLivraison())
-                // .clientId(vente.getClient().getId())
-                // .clientNom(vente.getClient().getClientNom())
                 .proformaId(vente.getProforma() != null ? vente.getProforma().getId() : null)
                 .proformaRefe(vente.getProforma() != null ? vente.getProforma().getRefe() : null)
+                .clientId(vente.getClient() != null ? vente.getClient().getId() : null)
+                .clientNom(vente.getClient() != null ? vente.getClient().getClientNom() : null)
                 .lignes(lignesDto)
                 .montantBrutTotal(Math.round(montantBrutTotal * 100.0) / 100.0)
                 .montantRemiseLignes(Math.round(montantRemiseLignes * 100.0) / 100.0)
@@ -416,6 +433,7 @@ public class VenteService {
                 .montantTVA(Math.round(montantTVA * 100.0) / 100.0)
                 .prixTotal(vente.getPrixTotal())
                 .processId(vente.getProcess().getId())
+                .processValeur(vente.getProcess().getValeur())
                 .processName(vente.getProcess().getProcessName())
                 .build();
     }
@@ -493,31 +511,78 @@ public class VenteService {
         return null;
     }
 
-    /**
-     * 3.3 & 3.4 - Vérifier le stock disponible et réserver automatiquement
-     * Bloque la création de la vente si le stock est insuffisant
-     */
-    private void verifierEtReserverStock(Integer venteId, Integer depotId) {
-        // 3.4 - Vérifier que le stock est disponible pour toutes les lignes
-        Map<Integer, String> erreurs = stockReservationService.verifierStockPourVente(venteId, depotId);
-
-        if (!erreurs.isEmpty()) {
-            // Construire le message d'erreur détaillé
-            StringBuilder messageErreur = new StringBuilder("Stock insuffisant pour les articles suivants :\n");
-            erreurs.values().forEach(msg -> messageErreur.append("- ").append(msg).append("\n"));
-
-            log.error("Vérification stock échouée pour vente {}: {}", venteId, messageErreur);
-            throw new RuntimeException(messageErreur.toString());
-        }
-
-        // 3.3 - Si le stock est disponible, créer les réservations automatiquement
+    private Integer getDepotIdForCurrentUser() {
         try {
-            stockReservationService.reserverStockPourVente(venteId, depotId);
-            log.info("Stock réservé avec succès pour vente ID {}", venteId);
+            Utilisateur utilisateur = getCurrentUser();
+            if (utilisateur != null && utilisateur.getEntity() != null) {
+                List<EntityDepot> entityDepots = entityDepotRepository.findByEntityId(utilisateur.getEntity().getId());
+                if (entityDepots != null && !entityDepots.isEmpty() && entityDepots.get(0).getDepot() != null) {
+                    return entityDepots.get(0).getDepot().getId();
+                }
+            }
         } catch (Exception e) {
-            log.error("Erreur lors de la réservation de stock pour vente {}: {}", venteId, e.getMessage());
-            throw new RuntimeException("Erreur lors de la réservation de stock: " + e.getMessage(), e);
+            log.warn("Impossible de récupérer le dépôt de l'utilisateur courant: {}", e.getMessage());
         }
+        log.warn("Aucun dépôt associé à l'utilisateur courant, utilisation du dépôt par défaut 1");
+        return 1;
+    }
+
+    /**
+     * 3.3 & 3.4 - Réserver les lots pour une vente (sans sortir le stock)
+     * Les lots seront sortis définitivement lors de la validation de commande
+     */
+    @Transactional
+    private void verifierEtReserverStock(Integer venteId, Integer depotId) {
+        try {
+            // Utiliser StockReservationService pour créer les réservations de stock
+            stockReservationService.reserverStockPourVente(venteId, depotId);
+            log.info("Réservations de stock créées via StockReservationService pour vente {} (dépôt {})", venteId, depotId);
+        } catch (Exception e) {
+            log.error("Erreur lors de la création des réservations pour la vente {} (dépôt {}): {}", venteId, depotId, e.getMessage());
+            throw new RuntimeException("Impossible de créer les réservations de stock: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Sortir définitivement les lots réservés lors de la validation de commande
+     * Appelée quand le statut passe de Brouillon à Confirmée
+     */
+    @Transactional
+    private void sortirLotsReserves(Integer venteId, Integer depotId) {
+        Vente vente = venteRepository.findById(venteId)
+                .orElseThrow(() -> new RuntimeException("Vente non trouvée: " + venteId));
+
+        // Vérifier que les lignes de vente existent
+        if (vente.getVenteLignes() == null || vente.getVenteLignes().isEmpty()) {
+            log.warn("Aucune ligne de vente trouvée pour la sortie de stock de la vente {}", venteId);
+            return; // Pas de stock à sortir si pas de lignes
+        }
+
+        for (VenteLigne ligne : vente.getVenteLignes()) {
+            try {
+                // Sortir définitivement les lots qui étaient réservés
+                lotService.sortirStock(
+                    ligne.getArticle().getId(),
+                    ligne.getQuantite().doubleValue(),
+                    depotId,
+                    "Sortie définitive commande " + vente.getRefe(),
+                    null,
+                    getCurrentUser() != null ? getCurrentUser().getId() : null
+                );
+                
+                log.info("Lots sortis définitivement pour article {} - quantité {} (vente {})", 
+                        ligne.getArticle().getArticleNom(), ligne.getQuantite(), vente.getRefe());
+                        
+            } catch (Exception e) {
+                log.error("Erreur lors de la sortie définitive pour article {} (vente {}): {}", 
+                         ligne.getArticle().getArticleNom(), vente.getRefe(), e.getMessage());
+                throw new RuntimeException(
+                    String.format("Impossible de sortir les lots pour l'article '%s'. %s", 
+                                 ligne.getArticle().getArticleNom(), e.getMessage()), e);
+            }
+        }
+        
+        log.info("Sortie définitive réalisée pour toutes les lignes de la vente {}", vente.getRefe());
     }
 
     /**
@@ -548,9 +613,9 @@ public class VenteService {
         // 3.5 - Historiser le changement dans vente_historiques
         historiserChangementStatut(savedVente, processConfirmee);
 
-        // 3.5 - Réserver le stock (uniquement si process_id >= Confirmée)
-        Integer depotPrincipal = 1; // TODO: À paramétrer
-        verifierEtReserverStock(venteId, depotPrincipal);
+        // 3.5 - SORTIR DÉFINITIVEMENT les lots réservés lors de la validation
+        //Integer depotPrincipal = getDepotIdForCurrentUser();
+        //sortirLotsReserves(venteId, depotPrincipal);
 
         // Journaliser dans audit_logs
         String details = String.format("Validation commerciale: %s → %s",
@@ -619,11 +684,12 @@ public class VenteService {
         // 3.6 - Recalculer les réservations de stock si la commande est Confirmée ou
         // plus
         if (vente.getProcess().getValeur() >= 60) {
-            // Libérer les anciennes réservations
-            stockReservationService.libererReservationsVente(venteId, "Modification des lignes de commande");
-
-            // Créer de nouvelles réservations
-            Integer depotPrincipal = 1; // TODO: À paramétrer
+            // Libérer les anciennes réservations et créer de nouvelles réservations
+            lotService.libererReservationsVente(venteId, "Modification des lignes de commande");
+            log.info("Recalcul des réservations après modification des lignes pour vente {}", vente.getRefe());
+            
+            // Réserver les lots pour les nouvelles lignes
+            Integer depotPrincipal = getDepotIdForCurrentUser();
             verifierEtReserverStock(venteId, depotPrincipal);
         }
 
@@ -683,9 +749,10 @@ public class VenteService {
         vente.setProcess(processAnnulee);
         Vente savedVente = venteRepository.save(vente);
 
-        // 3.7 - Libérer les réservations de stock (passer en état Libérée = 99)
+        // 3.7 - Libérer les réservations de lots si la commande était confirmée
         if (ancienProcess.getValeur() >= 60) {
-            stockReservationService.libererReservationsVente(venteId, motif);
+            lotService.libererReservationsVente(venteId, motif);
+            log.info("Commande {} annulée - libération des réservations de lots", vente.getRefe());
         }
 
         // 3.7 - Historiser dans vente_historiques
