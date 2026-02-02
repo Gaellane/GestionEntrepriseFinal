@@ -32,4 +32,8 @@ public class Fournisseur {
     @OneToMany(mappedBy = "fournisseur", fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
     private List<ProformaAchat> proformaAchats;
+
+    @OneToMany(mappedBy = "fournisseur", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
+    private List<Commande> commandes;
 }

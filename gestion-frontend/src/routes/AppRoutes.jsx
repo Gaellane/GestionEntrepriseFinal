@@ -31,7 +31,13 @@ import AchatFiche from "../pages/achat/AchatFiche";
 import AuditLogs from "../pages/admin/AuditLogs";
 import RolesAssignment from "../pages/admin/RolesAssignment";
 import RolesValidation from "../pages/admin/RolesValidation";
+import DemandeProforma from "../pages/achat/DemandeProforma";
+import ProformaSaisie from "../pages/achat/ProformaSaisie";
+import LivraisonSaisie from "../pages/achat/LivraisonSaisie";
+import ReceptionSaisie from "../pages/achat/ReceptionSaisie";
+import AchatKpiDashboard from "../pages/achat/AchatKpiDashboard";
 
+import { TruckIcon } from "@heroicons/react/24/solid";
 //achat , articele 
 import ListeArticle from "../pages/article/ListeArticle";
 
@@ -136,6 +142,20 @@ const AppRoutes = () => {
         <Route path="/admin/audit-logs" element={<AuditLogs/>} />
         <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
         <Route path="/admin/roles-validation" element={<RolesValidation/>} />
+        
+        <Route path="/articles">
+          <Route index element={<ListeArticle />} />
+        </Route>
+        <Route path="/achats">
+          <Route path="saisie" element={<AchatSaisie />} />
+          <Route path="demandes" element={<AchatList />} />
+          <Route path="fiche/:id" element={<AchatFiche />} />
+          <Route path="commande/saisie/:id" element={<DemandeProforma />} />
+          <Route path="proforma/saisie/:achatId/:fournisseurId" element={<ProformaSaisie />} />
+          <Route path="livraison/saisie/:achatId" element={<LivraisonSaisie />} />
+          <Route path="livraison/reception/:achatId" element={<ReceptionSaisie />} />
+          <Route path="kpi" element={<AchatKpiDashboard />} />
+        </Route>
 
       </Route>
     </Routes>

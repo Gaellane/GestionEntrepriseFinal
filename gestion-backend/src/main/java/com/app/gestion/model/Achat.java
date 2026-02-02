@@ -50,4 +50,8 @@ public class Achat {
     @lombok.ToString.Exclude
     private List<ProformaAchat> proformaAchats;
 
+    @OneToMany(mappedBy = "achat", fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
+    private List<Commande> commandes;
+
 }

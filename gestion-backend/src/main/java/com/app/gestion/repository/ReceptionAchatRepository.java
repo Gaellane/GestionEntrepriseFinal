@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ReceptionAchatRepository extends JpaRepository<ReceptionAchat, Integer> {
     Optional<ReceptionAchat> findByRefe(String refe);
+    Optional<ReceptionAchat> findByBonCommande_Id(Integer bonCommandeId);
 }
