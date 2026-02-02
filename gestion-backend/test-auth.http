@@ -107,12 +107,7 @@ Content-Type: {{contentType}}
     "motDePasse": "resp_finance",
     "entityId": 1,
     "roleId": 8
-}
-
-###
-
-POST {{baseUrl}}/register
-Content-Type: {{contentType}}
+},
 
 {
     "nom": "Employe Finance",
