@@ -128,7 +128,6 @@ public interface VenteRepository extends JpaRepository<Vente, Integer> {
     // Ventes avec filtres multiples
     @Query("SELECT v FROM Vente v " +
             "WHERE v.dateEntree BETWEEN :dateDebut AND :dateFin " +
-            "AND (:commercialId IS NULL OR v.proforma.utilisateur.id = :commercialId) " +
             "AND (:clientId IS NULL OR v.proforma.client.id = :clientId) " +
             "ORDER BY v.dateEntree DESC")
     List<Vente> findWithFilters(@Param("dateDebut") LocalDateTime dateDebut,

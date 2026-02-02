@@ -2,8 +2,6 @@ package com.app.gestion.repository;
 
 import com.app.gestion.model.Lot;
 
-import jakarta.persistence.criteria.CriteriaBuilder.In;
-
 import java.time.LocalDateTime;
 import java.util.List;
 

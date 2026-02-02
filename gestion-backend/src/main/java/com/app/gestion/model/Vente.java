@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @jakarta.persistence.Entity
@@ -29,6 +30,11 @@ public class Vente {
     @JoinColumn(name = "proforma_id", nullable = false)
     @lombok.ToString.Exclude
     private ProformaVente proforma;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    @lombok.ToString.Exclude
+    private Client client;
 
     @Column(name = "date_effective", nullable = false)
     private LocalDate dateEffective;
@@ -55,13 +61,13 @@ public class Vente {
 
     @OneToMany(mappedBy = "vente", fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
-    private List<VenteLigne> venteLignes;
+    private List<VenteLigne> venteLignes=new ArrayList<VenteLigne>();
 
     @OneToMany(mappedBy = "vente", fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
-    private List<VenteHistorique> venteHistoriques;
+    private List<VenteHistorique> venteHistoriques=new ArrayList<VenteHistorique>();
 
     @OneToMany(mappedBy = "vente", fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
-    private List<LivraisonVente> livraisonVentes;
+    private List<LivraisonVente> livraisonVentes=new ArrayList<LivraisonVente>();
 }

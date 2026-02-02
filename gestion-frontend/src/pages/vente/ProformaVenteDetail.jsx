@@ -30,6 +30,8 @@ const ProformaVenteDetail = () => {
         }
     };
 
+    console.log('Pro-forma chargé:', proforma);
+
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('fr-FR', {
@@ -87,12 +89,38 @@ const ProformaVenteDetail = () => {
                         <p className="text-gray-500 text-sm mt-1">Créé le {formatDate(proforma.dateEntree)}</p>
                     </div>
                     <div className="flex space-x-2">
-                        <Link
-                            to={`/proforma-ventes/${id}/modifier`}
-                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-                        >
-                            Modifier
-                        </Link>
+                        {proforma.processId === 1 && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await proformaVenteApi.envoyerProforma(proforma.id);
+                                        loadProformaDetail(); // Recharger les données après validation
+                                    } catch (err) {
+                                        console.error('Erreur lors de la validation:', err);
+                                        setError('Erreur lors de la validation du pro-forma');
+                                    }
+                                }}
+                                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                                Valider
+                            </button>
+                        )}
+                        {proforma.processId === 2 && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await proformaVenteApi.accepterProforma(proforma.id);
+                                        loadProformaDetail(); // Recharger les données après acceptation
+                                    } catch (err) {
+                                        console.error('Erreur lors de l\'acceptation:', err);
+                                        setError('Erreur lors de l\'acceptation du pro-forma');
+                                    }
+                                }}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                Accepter
+                            </button>
+                        )}
                         <button
                             onClick={() => navigate('/proforma-ventes')}
                             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"

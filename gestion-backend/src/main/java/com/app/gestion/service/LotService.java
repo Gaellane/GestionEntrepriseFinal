@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 import com.app.gestion.utilitaire.ReferenceGenerator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.app.gestion.model.Article;
@@ -160,42 +160,45 @@ public class LotService {
         Article a = articleRepository.findById(articleId).orElseThrow(() -> new IllegalArgumentException("Article non trouvé"));
         String method = a.getValorisation();
 
-        // When a cutoff is provided, use derived query methods that filter by dateArrivee
+        List<Lot> candidateLots;
+
         if (dateArriveeCutoff != null) {
             if ("FIFO".equalsIgnoreCase(method)) {
                 if (depotId != null) {
-                    return lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, depotId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, depotId, 0.0, dateArriveeCutoff);
                 } else {
-                    return lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, 0.0, dateArriveeCutoff);
                 }
             } else if ("LIFO".equalsIgnoreCase(method)) {
                 if (depotId != null) {
-                    return lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(articleId, depotId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(articleId, depotId, 0.0, dateArriveeCutoff);
                 } else {
-                    return lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(articleId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeDesc(articleId, 0.0, dateArriveeCutoff);
                 }
             } else if ("CMUP".equalsIgnoreCase(method)) {
                 // For CMUP, use FIFO ordering as selection basis
                 if (depotId != null) {
-                    return lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, depotId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndDepotIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, depotId, 0.0, dateArriveeCutoff);
                 } else {
-                    return lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, 0.0, dateArriveeCutoff);
+                    candidateLots = lotRepository.findByArticleIdAndQuantiteGreaterThanAndDateArriveeLessThanEqualOrderByDateArriveeAsc(articleId, 0.0, dateArriveeCutoff);
                 }
+            } else {
+                throw new IllegalArgumentException("Méthode de valorisation inconnue : " + method);
+            }
+        } else {
+            // No cutoff: prefer existing repository native methods (they use window functions)
+            if ("FIFO".equalsIgnoreCase(method)) {
+                candidateLots = lotRepository.findFIFO(articleId, depotId, quantite);
+            } else if ("LIFO".equalsIgnoreCase(method)) {
+                candidateLots = lotRepository.findLIFO(articleId, depotId, quantite);
+            } else if ("CMUP".equalsIgnoreCase(method)) {
+                candidateLots = lotRepository.findCMUP(articleId, depotId, quantite);
             } else {
                 throw new IllegalArgumentException("Méthode de valorisation inconnue : " + method);
             }
         }
 
-        // No cutoff: prefer existing repository native methods (they use window functions)
-        if ("FIFO".equalsIgnoreCase(method)) {
-            return lotRepository.findFIFO(articleId, depotId, quantite);
-        } else if ("LIFO".equalsIgnoreCase(method)) {
-            return lotRepository.findLIFO(articleId, depotId, quantite);
-        } else if ("CMUP".equalsIgnoreCase(method)) {
-            return lotRepository.findCMUP(articleId, depotId, quantite);
-        } else {
-            throw new IllegalArgumentException("Méthode de valorisation inconnue : " + method);
-        }
+        return candidateLots;
     }
 
 
@@ -242,6 +245,186 @@ public class LotService {
                 .build();
         auditLogRepository.save(auditLog);
         return savedLot;
+    }
+
+    /**
+     * Sortir définitivement du stock en utilisant les lots sélectionnés par méthode FIFO
+     * @param articleId ID de l'article
+     * @param quantite Quantité à sortir
+     * @param depotId ID du dépôt
+     * @param motif Motif de la sortie
+     * @return Liste des lots utilisés pour la sortie
+     */
+    @Transactional
+    public List<Lot> sortirStock(Integer articleId, Double quantite, Integer depotId, String motif, Integer raisonId, Integer userId) throws Exception {
+        // Récupérer les lots disponibles selon la méthode FIFO
+        List<Lot> lotsDisponibles = getLotsByMethod(articleId, depotId, quantite);
+        
+        if (lotsDisponibles.isEmpty()) {
+            throw new InsufficientQuantityException("Aucun lot disponible pour l'article ID " + articleId);
+        }
+        
+        // Vérifier la quantité totale disponible
+        Double quantiteTotaleDisponible = lotsDisponibles.stream()
+                .mapToDouble(Lot::getQuantiteRestante)
+                .sum();
+                
+        if (quantiteTotaleDisponible < quantite) {
+            throw new InsufficientQuantityException(
+                String.format("Stock insuffisant. Disponible: %.2f, Demandé: %.2f", 
+                             quantiteTotaleDisponible, quantite));
+        }
+        
+        List<Lot> lotsUtilises = new ArrayList<>();
+        Double quantiteRestanteASortir = quantite;
+        
+        // Sortir de chaque lot dans l'ordre FIFO
+        for (Lot lot : lotsDisponibles) {
+            if (quantiteRestanteASortir <= 0) break;
+            
+            Double quantiteAPreleversurCeLot = Math.min(quantiteRestanteASortir, lot.getQuantiteRestante());
+
+            // Mettre à jour la quantité restante du lot
+            lot.setQuantiteRestante(lot.getQuantiteRestante() - quantiteAPreleversurCeLot);
+            lotRepository.save(lot);
+
+            // Enregistrer le mouvement de sortie (avec raisonId et userId)
+            enregistrerMouvementSortie(lot, quantiteAPreleversurCeLot, raisonId, motif, userId);
+            
+            lotsUtilises.add(lot);
+            quantiteRestanteASortir -= quantiteAPreleversurCeLot;
+        }
+        
+        return lotsUtilises;
+    }
+
+    /**
+     * Réserver des lots pour une future sortie (sans modifier les quantités)
+     * @param articleId ID de l'article
+     * @param quantite Quantité à réserver
+     * @param depotId ID du dépôt
+     * @param venteId ID de la vente (pour traçabilité)
+     * @return Liste des lots réservés
+     */
+    @Transactional
+    public List<Lot> reserverLots(Integer articleId, Double quantite, Integer depotId, Integer venteId, String motif) throws Exception {
+        List<Lot> lotsDisponibles = getLotsByMethod(articleId, depotId, quantite);
+        
+        if (lotsDisponibles.isEmpty()) {
+            throw new InsufficientQuantityException("Aucun lot disponible pour réservation article ID " + articleId);
+        }
+        
+        Double quantiteTotaleDisponible = lotsDisponibles.stream()
+                .mapToDouble(Lot::getQuantiteRestante)
+                .sum();
+                
+        if (quantiteTotaleDisponible < quantite) {
+            throw new InsufficientQuantityException(
+                String.format("Stock insuffisant pour réservation. Disponible: %.2f, Demandé: %.2f", 
+                             quantiteTotaleDisponible, quantite));
+        }
+        
+        List<Lot> lotsReserves = new ArrayList<>();
+        Double quantiteRestanteAReserver = quantite;
+        
+        // Marquer les lots comme réservés (logique de réservation à implémenter)
+        for (Lot lot : lotsDisponibles) {
+            if (quantiteRestanteAReserver <= 0) break;
+            
+            Double quantiteAReserverSurCeLot = Math.min(quantiteRestanteAReserver, lot.getQuantiteRestante());
+            
+            // TODO: Implémenter la logique de réservation (table de réservation ou champ dans Lot)
+            // Pour l'instant, on retourne juste les lots qui seraient utilisés
+            
+            lotsReserves.add(lot);
+            quantiteRestanteAReserver -= quantiteAReserverSurCeLot;
+        }
+        
+        return lotsReserves;
+    }
+
+    /**
+     * Libérer les réservations pour une vente annulée
+     * @param venteId ID de la vente
+     */
+    @Transactional  
+    public void libererReservationsVente(Integer venteId, String motif) {
+        // TODO: Implémenter la libération des réservations
+        // Requête pour supprimer les réservations liées à cette vente
+    }
+
+    /**
+     * Enregistrer un mouvement de sortie de lot
+     */
+    @Transactional
+    private void enregistrerMouvementSortie(Lot lot, Double quantite, Integer raisonId, String motif, Integer userId) {
+        try {
+            StockTypeMouvement typeSortie = stockTypeMouvementRepository.findById(2) // 2 = Sortie
+                    .orElseThrow(() -> new IllegalArgumentException("Type mouvement 'Sortie' non trouvé"));
+
+                // Récupérer la raison demandée si fournie, sinon tomber sur la première disponible
+                var raison = (raisonId != null) ? raisonMouvementRepository.findById(raisonId).orElse(null) : null;
+                if (raison == null) {
+                raison = raisonMouvementRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Raison de mouvement non trouvée"));
+                }
+
+            LotMouvement mouvement = LotMouvement.builder()
+                    .lot(lot)
+                    .quantite(quantite)
+                    .typeMouvement(typeSortie)
+                    .raison(raison)
+                    .dateEntree(LocalDateTime.now())
+                    .description(motif)
+                    .build();
+
+            lotMouvementRepository.save(mouvement);
+
+            // Enregistrer l'audit si l'utilisateur est fourni
+            Utilisateur user = null;
+            if (userId != null) {
+                user = utilisateurRepository.findById(userId).orElse(null);
+            }
+
+            AuditLog auditLog = AuditLog.builder()
+                    .utilisateur(user)
+                    .action(actionRepository.findById(2).orElseThrow(() -> new IllegalArgumentException("Action non trouvée")))
+                    .classes("Lot;LotMouvement")
+                    .idsClasses(lot.getId() + ";" + mouvement.getId())
+                    .newValues(lot.toString() + "\n" + mouvement.toString())
+                    .build();
+            auditLogRepository.save(auditLog);
+        } catch (Exception e) {
+            // Log l'erreur mais ne pas bloquer la sortie principale
+            System.err.println("Erreur enregistrement mouvement: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sortir du stock en spécifiant la raison et l'utilisateur
+     * @param lotId ID du lot
+     * @param quantite Quantité à sortir
+     * @param motif Description de la sortie
+     * @param raisonId ID de la raison (peut être null, utilisera la première disponible)
+     * @param userId ID de l'utilisateur (peut être null)
+     */
+    @Transactional
+    public void sortirStock(Integer lotId, Double quantite, String motif, Integer raisonId, Integer userId) {
+        Lot lot = lotRepository.findById(lotId)
+                .orElseThrow(() -> new IllegalArgumentException("Lot non trouvé: " + lotId));
+
+        if (lot.getQuantiteRestante() < quantite) {
+            throw new InsufficientQuantityException(
+                String.format("Stock insuffisant dans le lot %s. Disponible: %.2f, Demandé: %.2f", 
+                             lot.getNumero(), lot.getQuantiteRestante(), quantite));
+        }
+
+        // Mettre à jour la quantité restante
+        lot.setQuantiteRestante(lot.getQuantiteRestante() - quantite);
+        lotRepository.save(lot);
+
+        // Enregistrer le mouvement
+        enregistrerMouvementSortie(lot, quantite, raisonId, motif, userId);
     }
 
 }

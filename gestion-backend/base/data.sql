@@ -138,17 +138,17 @@ SELECT 1, a.id FROM articles a WHERE a.refe IN (
 -- note: article_prix.article_id référence article_entities.id
 INSERT INTO article_prix (article_id, prix, date_entree)
 SELECT ae.id, CASE a.refe
-		WHEN 'VET-0001' THEN 45.00
-		WHEN 'VET-0002' THEN 150.00
-		WHEN 'PARF-0001' THEN 85.00
-		WHEN 'PARF-0002' THEN 60.00
-		WHEN 'COS-0001' THEN 22.00
-		WHEN 'COS-0002' THEN 8.50
-		WHEN 'ACC-0001' THEN 220.00
-		WHEN 'CHAUSS-0001' THEN 75.00
-		WHEN 'LING-0001' THEN 55.00
-		WHEN 'SOIN-0001' THEN 12.50
-		WHEN 'MAQ-0001' THEN 35.00
+		WHEN 'VET-0001' THEN 45000.00
+		WHEN 'VET-0002' THEN 15000.00
+		WHEN 'PARF-0001' THEN 85000.00
+		WHEN 'PARF-0002' THEN 60000.00
+		WHEN 'COS-0001' THEN 22000.00
+		WHEN 'COS-0002' THEN 80000.50
+		WHEN 'ACC-0001' THEN 220000.00
+		WHEN 'CHAUSS-0001' THEN 75000.00
+		WHEN 'LING-0001' THEN 55000.00
+		WHEN 'SOIN-0001' THEN 12500.00
+		WHEN 'MAQ-0001' THEN 35000.00
 		ELSE 0 END as prix,
 	NOW()
 FROM article_entities ae
@@ -200,6 +200,38 @@ INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
 INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
 ('MAGINV','MAGASINIER INVENTAIRE', 9, 5);
 
-
 INSERT INTO roles (role_code,role_name, niveau_acces, department_id) VALUES 
 ('ADMINSYS','ADMINISTRATEUR SYSTEME', 50, 1);
+
+-- ==================================================================
+-- Sample clients (entreprises et particuliers)
+-- ==================================================================
+INSERT INTO clients (client_nom, contact, adresse, coordonnee_bancaire) VALUES
+('SARL Andry & Co', 'Tel:+261341234567; contact@andryco.mg', 'Lot II A 12, Antananarivo', 'BIC:BNGMMGXXXX - ACC: 1234567890'),
+('Société FitLine', 'Tel:+261320345678; sales@fitline.mg', 'Zone Industrielle, Antsirabe', 'BIC:BFITMGXXX - ACC: 9876543210'),
+('Ets Rakoto Import', 'Tel:+261202233344; contact@rakoto.mg', 'Rue du Commerce, Toamasina', 'BIC:ERAKMGXXX - ACC: 1122334455'),
+('Compagnie MadaTech', 'Tel:+261341112223; info@madatech.mg', 'Avenue de la Technologie, Antananarivo', 'BIC:MDTMGXXX - ACC: 5566778899'),
+('Association Solidarité', 'Tel:+261333224455; hello@solidarite.mg', 'Quartier Isoraka, Antananarivo', ''),
+('Rajaonarimampianina H.', 'Tel:+261345678901; raja.h@example.mg', 'Analakely, Antananarivo', ''),
+('Randriamamonjy S.', 'Tel:+261331234567; s.randria@example.mg', 'Ambohijatovo, Antananarivo', ''),
+('Rasoa R.', 'Tel:+261334455666; rasoa.r@example.mg', 'Antsirabe Centre', ''),
+('Andriamanana T.', 'Tel:+261339998877; tandria@example.mg', 'Toamasina, Rue des Fleurs', ''),
+('Mme. Vololona N.', 'Tel:+261327776655; vololona.n@example.mg', 'Fianarantsoa, Rue Principale', '');
+
+-- ==================================================================
+-- Processus de vente (pro-forma et commandes)
+-- ==================================================================
+-- Statuts Pro-forma (valeurs 10-50)
+INSERT INTO vente_processes (process_name, abreviation, valeur) VALUES
+('Brouillon', 'BROUIL', 10),           -- etat initial pro-forma et commande
+('Envoye', 'ENVOYE', 20),              -- Pro-forma envoye au client
+('Accepte', 'ACCEPT', 30),             -- Pro-forma accepte par client
+('Refuse', 'REFUSE', 40),              -- Pro-forma refuse par client
+('Transforme en commande', 'TRANSF', 50), -- Pro-forma converti en commande
+
+-- Statuts Commande (valeurs 60-99)
+('Confirmee', 'CONFIR', 60),           -- Validation commerciale + reservation stock
+('En preparation', 'PREPAR', 70),      -- Commande en cours de preparation
+('Prete', 'PRETE', 80),                -- Commande prete a livrer
+('Livree', 'LIVRE', 90),               -- Commande livree au client
+('Annulee', 'ANNULE', 99);             -- Commande annulee + liberation stock

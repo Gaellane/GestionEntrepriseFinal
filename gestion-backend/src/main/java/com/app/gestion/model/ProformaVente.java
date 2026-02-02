@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @jakarta.persistence.Entity
@@ -42,8 +43,10 @@ public class ProformaVente {
     private Double remiseFixe;
 
     @OneToMany(mappedBy = "proforma", fetch = FetchType.LAZY)
-    private List<ProformaVenteLigne> proformaVenteLignes;
+    @Builder.Default
+    private List<ProformaVenteLigne> proformaVenteLignes = new ArrayList<>();
 
     @OneToMany(mappedBy = "proforma", fetch = FetchType.LAZY)
-    private List<Vente> ventes;
+    @Builder.Default
+    private List<Vente> ventes = new ArrayList<>();
 }

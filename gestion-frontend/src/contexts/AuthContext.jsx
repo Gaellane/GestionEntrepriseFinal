@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { AuthContext } from '../config/permissions';
+import React, { useState, createContext } from 'react';
+
+// Créer le contexte ici au lieu de l'importer
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -9,7 +11,8 @@ export const AuthProvider = ({ children }) => {
   
   const login = (userData) => {
       localStorage.setItem('user', JSON.stringify(userData.user));
-      localStorage.setItem('token', JSON.stringify(userData.token));
+      // store token as plain string (no extra JSON quotes)
+      localStorage.setItem('token', userData.token);
       setUser(userData.user);
   };
   

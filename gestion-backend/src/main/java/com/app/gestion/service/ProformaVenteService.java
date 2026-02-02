@@ -3,15 +3,12 @@ package com.app.gestion.service;
 import com.app.gestion.dto.proformavente.ProformaVenteLigneDto;
 import com.app.gestion.dto.proformavente.ProformaVenteRequestDto;
 import com.app.gestion.dto.proformavente.ProformaVenteResponseDto;
-import com.app.gestion.dto.proformavente.ProformaVenteWorkflowDto;
 import com.app.gestion.dto.vente.VenteRequestDto;
 import com.app.gestion.dto.vente.VenteResponseDto;
 import com.app.gestion.exception.RemiseException;
 import com.app.gestion.model.*;
 import com.app.gestion.repository.*;
 import com.app.gestion.utilitaire.ReferenceGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,9 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,10 +35,9 @@ public class ProformaVenteService {
     private final ArticleRepository articleRepository;
     private final VenteProcessRepository venteProcessRepository;
     private final ConfigurationRepository configurationRepository;
-    private final AuditLogRepository auditLogRepository;
-    private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
-    private final VenteService venteService; // Ajout pour transformation
+    private final VenteService venteService;
+    private final TarificationService tarificationService;
+    private final UtilisateurRepository utilisateurRepository;
 
     @Transactional(readOnly = true)
     public Page<ProformaVenteResponseDto> getAllProformaVentes(Pageable pageable) {
@@ -51,7 +45,6 @@ public class ProformaVenteService {
         return proformaPage.map(this::mapToResponseDto);
     }
 
-    @Transactional(readOnly = true)
     public ProformaVenteResponseDto getProformaVenteById(Integer id) {
         ProformaVente proforma = proformaVenteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé avec l'id: " + id));
@@ -81,12 +74,52 @@ public class ProformaVenteService {
         // Récupérer le taux de TVA
         Double tauxTVA = getTauxTVA();
 
-        // Créer le pro-forma
+        // Pré-calculer le prix total en récupérant les prix actuels des articles
+        Double prixTotalCalcule = 0.0;
+        List<ProformaVenteLigneDto> lignesAvecPrix = new ArrayList<>();
+        
+        for (ProformaVenteLigneDto ligneDto : requestDto.getLignes()) {
+            // Récupérer le prix actuel si le prix n'est pas fourni ou est 0
+            Double prixUnitaire = ligneDto.getPrixUnitaire();
+            if (prixUnitaire == null || prixUnitaire == 0.0) {
+                try {
+                    var prixActuel = tarificationService.getLatestPrixByArticleId(ligneDto.getArticleId());
+                    if (prixActuel != null && prixActuel.getPrixVente() != null) {
+                        prixUnitaire = prixActuel.getPrixVente();
+                    } else {
+                        prixUnitaire = 0.0;
+                    }
+                } catch (Exception e) {
+                    log.warn("Impossible de récupérer le prix actuel pour l'article {}: {}", ligneDto.getArticleId(), e.getMessage());
+                    prixUnitaire = ligneDto.getPrixUnitaire() != null ? ligneDto.getPrixUnitaire() : 0.0;
+                }
+            }
+            
+            // Créer une nouvelle ligne DTO avec le prix correct
+            ProformaVenteLigneDto ligneAvecPrix = ProformaVenteLigneDto.builder()
+                    .articleId(ligneDto.getArticleId())
+                    .quantite(ligneDto.getQuantite())
+                    .prixUnitaire(prixUnitaire)
+                    .remisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0)
+                    .remiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0)
+                    .build();
+            lignesAvecPrix.add(ligneAvecPrix);
+        }
+        
+        // Calculer le prix total basé sur les lignes avec prix
+        prixTotalCalcule = calculatePrixTotalFromDto(lignesAvecPrix, 
+                requestDto.getRemisePourcentage() != null ? requestDto.getRemisePourcentage() : 0.0,
+                requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0, 
+                tauxTVA);
+
+        // Créer le pro-forma avec le prix total calculé
+        
         ProformaVente proforma = ProformaVente.builder()
                 .client(client)
                 .process(process)
                 .refe(reference)
                 .dateEntree(LocalDateTime.now())
+                .prixTotal(prixTotalCalcule)
                 .remisePourcentage(requestDto.getRemisePourcentage() != null ? requestDto.getRemisePourcentage() : 0.0)
                 .remiseFixe(requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0)
                 .build();
@@ -94,9 +127,9 @@ public class ProformaVenteService {
         // Sauvegarder d'abord le pro-forma pour obtenir l'ID
         ProformaVente savedProforma = proformaVenteRepository.save(proforma);
 
-        // Créer les lignes
+        // Créer les lignes en utilisant les prix déjà calculés
         List<ProformaVenteLigne> lignes = new ArrayList<>();
-        for (ProformaVenteLigneDto ligneDto : requestDto.getLignes()) {
+        for (ProformaVenteLigneDto ligneDto : lignesAvecPrix) {
             Article article = articleRepository.findById(ligneDto.getArticleId())
                     .orElseThrow(
                             () -> new RuntimeException("Article non trouvé avec l'id: " + ligneDto.getArticleId()));
@@ -106,8 +139,8 @@ public class ProformaVenteService {
                     .article(article)
                     .quantite(ligneDto.getQuantite())
                     .prixUnitaire(ligneDto.getPrixUnitaire())
-                    .remisePourcentage(ligneDto.getRemisePourcentage() != null ? ligneDto.getRemisePourcentage() : 0.0)
-                    .remiseFixe(ligneDto.getRemiseFixe() != null ? ligneDto.getRemiseFixe() : 0.0)
+                    .remisePourcentage(ligneDto.getRemisePourcentage())
+                    .remiseFixe(ligneDto.getRemiseFixe())
                     .build();
 
             lignes.add(ligne);
@@ -115,20 +148,17 @@ public class ProformaVenteService {
 
         proformaVenteLigneRepository.saveAll(lignes);
 
-        // Calculer et mettre à jour le prix total
-        Double prixTotal = calculatePrixTotal(lignes, savedProforma.getRemisePourcentage(),
-                savedProforma.getRemiseFixe(), tauxTVA);
-        savedProforma.setPrixTotal(prixTotal);
-        savedProforma = proformaVenteRepository.save(savedProforma);
+        // Recharger le proforma avec ses lignes depuis la base de données
+        ProformaVente proformaAvecLignes = proformaVenteRepository.findById(savedProforma.getId())
+                .orElseThrow(() -> new RuntimeException("Erreur lors du rechargement du proforma"));
 
-        // Journalisation avec détails si remise exceptionnelle
-        String details = "Création du pro-forma vente";
+        log.info("Pro-forma {} créé avec succès", proformaAvecLignes.getRefe());
         if (isRemiseExceptionnelle(requestDto.getRemisePourcentage(), currentUser)) {
-            details += " - REMISE EXCEPTIONNELLE: " + requestDto.getRemisePourcentage() + "%";
+            log.warn("REMISE EXCEPTIONNELLE appliquée sur le pro-forma {}: {}%", 
+                    proformaAvecLignes.getRefe(), requestDto.getRemisePourcentage());
         }
-        logAction("CREATE", null, savedProforma, details);
 
-        return mapToResponseDto(savedProforma);
+        return mapToResponseDto(proformaAvecLignes);
     }
 
     @Transactional
@@ -152,7 +182,9 @@ public class ProformaVenteService {
         existingProforma.setRemiseFixe(requestDto.getRemiseFixe() != null ? requestDto.getRemiseFixe() : 0.0);
 
         // Supprimer les anciennes lignes
-        proformaVenteLigneRepository.deleteAll(existingProforma.getProformaVenteLignes());
+        if (existingProforma.getProformaVenteLignes() != null) {
+            proformaVenteLigneRepository.deleteAll(existingProforma.getProformaVenteLignes());
+        }
 
         // Créer les nouvelles lignes
         List<ProformaVenteLigne> nouveLlesLignes = new ArrayList<>();
@@ -183,9 +215,7 @@ public class ProformaVenteService {
 
         ProformaVente updatedProforma = proformaVenteRepository.save(existingProforma);
 
-        // Journalisation
-        logAction("UPDATE", oldProforma, updatedProforma, "Modification du pro-forma vente");
-
+        log.info("Pro-forma {} modifié avec succès", updatedProforma.getRefe());
         return mapToResponseDto(updatedProforma);
     }
 
@@ -194,10 +224,14 @@ public class ProformaVenteService {
         ProformaVente proforma = proformaVenteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé avec l'id: " + id));
 
-        // Journalisation avant suppression
-        logAction("DELETE", proforma, null, "Suppression du pro-forma vente");
+        // Supprimer d'abord les lignes
+        if (proforma.getProformaVenteLignes() != null) {
+            proformaVenteLigneRepository.deleteAll(proforma.getProformaVenteLignes());
+        }
 
+        // Puis supprimer le proforma
         proformaVenteRepository.delete(proforma);
+        log.info("Pro-forma {} supprimé", proforma.getRefe());
     }
 
     // Méthodes utilitaires privées
@@ -254,11 +288,53 @@ public class ProformaVenteService {
         return Math.round(prixTotal * 100.0) / 100.0; // Arrondir à 2 décimales
     }
 
+    private Double calculatePrixTotalFromDto(List<ProformaVenteLigneDto> lignes, Double remisePourcentageGlobale,
+            Double remiseFixeGlobale, Double tauxTVA) {
+        // Calculer le montant brut total (avec remises par ligne)
+        double montantNet = 0.0;
+        for (ProformaVenteLigneDto ligne : lignes) {
+            double montantBrut = ligne.getQuantite() * ligne.getPrixUnitaire();
+
+            // Appliquer remise pourcentage ligne
+            double montantApresRemisePct = montantBrut;
+            if (ligne.getRemisePourcentage() != null && ligne.getRemisePourcentage() > 0) {
+                montantApresRemisePct = montantBrut * (1 - ligne.getRemisePourcentage() / 100);
+            }
+
+            // Appliquer remise fixe ligne
+            double montantNetLigne = montantApresRemisePct;
+            if (ligne.getRemiseFixe() != null && ligne.getRemiseFixe() > 0) {
+                montantNetLigne = Math.max(0, montantApresRemisePct - ligne.getRemiseFixe());
+            }
+
+            montantNet += montantNetLigne;
+        }
+
+        // Appliquer remise pourcentage globale
+        double montantApresRemiseGlobalePct = montantNet;
+        if (remisePourcentageGlobale != null && remisePourcentageGlobale > 0) {
+            montantApresRemiseGlobalePct = montantNet * (1 - remisePourcentageGlobale / 100);
+        }
+
+        // Appliquer remise fixe globale
+        double montantAvantTVA = montantApresRemiseGlobalePct;
+        if (remiseFixeGlobale != null && remiseFixeGlobale > 0) {
+            montantAvantTVA = Math.max(0, montantApresRemiseGlobalePct - remiseFixeGlobale);
+        }
+
+        // Appliquer TVA
+        double montantTVA = montantAvantTVA * (tauxTVA / 100);
+        double prixTotal = montantAvantTVA + montantTVA;
+
+        return Math.round(prixTotal * 100.0) / 100.0; // Arrondir à 2 décimales
+    }
+
     private ProformaVenteResponseDto mapToResponseDto(ProformaVente proforma) {
         Double tauxTVA = getTauxTVA();
 
         // Mapper les lignes
-        List<ProformaVenteLigneDto> lignesDto = proforma.getProformaVenteLignes().stream()
+        List<ProformaVenteLigneDto> lignesDto = proforma.getProformaVenteLignes() != null ? 
+            proforma.getProformaVenteLignes().stream()
                 .map(ligne -> {
                     double montantBrut = ligne.getQuantite() * ligne.getPrixUnitaire();
 
@@ -289,7 +365,8 @@ public class ProformaVenteService {
                             .montantNet(Math.round(montantNetLigne * 100.0) / 100.0)
                             .build();
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) 
+            : new ArrayList<>();
 
         // Calculer les totaux
         double montantBrutTotal = lignesDto.stream()
@@ -336,8 +413,11 @@ public class ProformaVenteService {
                 .tauxTVA(tauxTVA)
                 .montantTVA(Math.round(montantTVA * 100.0) / 100.0)
                 .prixTotal(proforma.getPrixTotal())
-                .processId(proforma.getProcess().getId())
-                .processName(proforma.getProcess().getProcessName())
+                // Informations de processus
+                .processId(proforma.getProcess() != null ? proforma.getProcess().getId() : null)
+                .processName(proforma.getProcess() != null ? proforma.getProcess().getProcessName() : null)
+                .processValeur(proforma.getProcess() != null ? proforma.getProcess().getValeur() : null)
+                .processAbreviation(proforma.getProcess() != null ? proforma.getProcess().getAbreviation() : null)
                 .build();
     }
 
@@ -346,7 +426,6 @@ public class ProformaVenteService {
                 .id(source.getId())
                 .refe(source.getRefe())
                 .client(source.getClient())
-                .process(source.getProcess())
                 .dateEntree(source.getDateEntree())
                 .prixTotal(source.getPrixTotal())
                 .remisePourcentage(source.getRemisePourcentage())
@@ -354,61 +433,9 @@ public class ProformaVenteService {
                 .build();
     }
 
-    private void logAction(String actionName, ProformaVente oldProforma, ProformaVente newProforma, String details) {
-        try {
-            Action action = actionRepository.findByActionName(actionName)
-                    .orElseThrow(() -> new RuntimeException("Action non trouvée: " + actionName));
+    // ============ MÉTHODES DE VALIDATION ET UTILITAIRES ============
 
-            Utilisateur utilisateur = getCurrentUser();
-
-            String oldValues = oldProforma != null ? convertProformaToJson(oldProforma) : null;
-            String newValues = newProforma != null ? convertProformaToJson(newProforma) : null;
-            String idsClasses = newProforma != null ? String.valueOf(newProforma.getId())
-                    : (oldProforma != null ? String.valueOf(oldProforma.getId()) : "");
-
-            AuditLog auditLog = AuditLog.builder()
-                    .utilisateur(utilisateur)
-                    .action(action)
-                    .classes("ProformaVente")
-                    .idsClasses(idsClasses)
-                    .actionTimestamp(LocalDateTime.now())
-                    .oldValues(oldValues)
-                    .newValues(newValues)
-                    .details(details)
-                    .build();
-
-            auditLogRepository.save(auditLog);
-            log.info("Action {} journalisée pour ProformaVente {}", actionName, idsClasses);
-        } catch (Exception e) {
-            log.error("Erreur lors de la journalisation de l'action {}: {}", actionName, e.getMessage());
-        }
-    }
-
-    private String convertProformaToJson(ProformaVente proforma) {
-        try {
-            Map<String, Object> proformaMap = new HashMap<>();
-            proformaMap.put("id", proforma.getId());
-            proformaMap.put("refe", proforma.getRefe());
-            proformaMap.put("clientId", proforma.getClient().getId());
-            proformaMap.put("prixTotal", proforma.getPrixTotal());
-            proformaMap.put("remisePourcentage", proforma.getRemisePourcentage());
-            proformaMap.put("remiseFixe", proforma.getRemiseFixe());
-            return objectMapper.writeValueAsString(proformaMap);
-        } catch (JsonProcessingException e) {
-            log.error("Erreur lors de la conversion du pro-forma en JSON", e);
-            return "{}";
-        }
-    }
-
-    private Utilisateur getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Utilisateur) {
-            return (Utilisateur) authentication.getPrincipal();
-        }
-        return null;
-    }
-
-    // ============ MÉTHODES DE WORKFLOW ET VALIDATION ============
+    // ============ MÉTHODES DE VALIDATION ET UTILITAIRES ============
 
     /**
      * 2.3 Validation des remises selon le rôle de l'utilisateur
@@ -490,17 +517,51 @@ public class ProformaVenteService {
     }
 
     /**
-     * 2.4 Workflow - Changer le statut du pro-forma
+     * Transformer un proforma en vente
      */
     @Transactional
-    public ProformaVenteResponseDto changerStatutProforma(Integer proformaId, ProformaVenteWorkflowDto workflowDto) {
+    public VenteResponseDto transformerEnVente(Integer proformaId) {
         ProformaVente proforma = proformaVenteRepository.findById(proformaId)
                 .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé"));
 
-        ProformaVente oldProforma = copyProforma(proforma);
-        VenteProcess nouveauProcess = null;
+        // Vérifier que le proforma est accepté (valeur 30)
+        if (proforma.getProcess().getValeur() != 30) {
+            throw new RuntimeException("Seul un pro-forma accepté peut être transformé en vente");
+        }
 
-        switch (workflowDto.getAction().toUpperCase()) {
+        // Créer la vente depuis le pro-forma
+        VenteRequestDto venteRequest = VenteRequestDto.builder()
+                .dateEffective(LocalDate.now())
+                .dateLivraison(null)
+                .locationLivraison(null)
+                .build();
+
+        VenteResponseDto venteCreated = venteService.createFromProforma(proformaId, venteRequest);
+        
+        // Changer le statut du proforma vers "Transformé en commande" (valeur 50)
+        VenteProcess processTransforme = venteProcessRepository.findAll().stream()
+                .filter(p -> p.getValeur() == 50)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Processus 'Transformé en commande' non trouvé"));
+        
+        proforma.setProcess(processTransforme);
+        proformaVenteRepository.save(proforma);
+        
+        log.info("Pro-forma {} transformé en vente {}", proforma.getRefe(), venteCreated.getRefe());
+        return venteCreated;
+    }
+
+    /**
+     * Changer le statut du proforma (workflow)
+     */
+    @Transactional
+    public ProformaVenteResponseDto changerStatutProforma(Integer proformaId, String action, String motif) {
+        ProformaVente proforma = proformaVenteRepository.findById(proformaId)
+                .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé"));
+
+        VenteProcess nouveauProcess = null;
+        
+        switch (action.toUpperCase()) {
             case "ENVOYER":
                 // Brouillon (10) → Envoyé (20)
                 if (proforma.getProcess().getValeur() != 10) {
@@ -511,7 +572,7 @@ public class ProformaVenteService {
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Processus 'Envoyé' non trouvé"));
                 break;
-
+                
             case "ACCEPTER":
                 // Envoyé (20) → Accepté (30)
                 if (proforma.getProcess().getValeur() != 20) {
@@ -522,7 +583,7 @@ public class ProformaVenteService {
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Processus 'Accepté' non trouvé"));
                 break;
-
+                
             case "REFUSER":
                 // Envoyé (20) → Refusé (40)
                 if (proforma.getProcess().getValeur() != 20) {
@@ -533,106 +594,50 @@ public class ProformaVenteService {
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Processus 'Refusé' non trouvé"));
                 break;
-
-            case "TRANSFORMER":
-                // Accepté (30) → Transformé en commande (50)
-                if (proforma.getProcess().getValeur() != 30) {
-                    throw new RuntimeException("Seul un pro-forma accepté peut être transformé en commande");
-                }
-                nouveauProcess = venteProcessRepository.findAll().stream()
-                        .filter(p -> p.getValeur() == 50)
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Processus 'Transformé en commande' non trouvé"));
-
-                // Créer la vente depuis le pro-forma
-                VenteRequestDto venteRequest = VenteRequestDto.builder()
-                        .dateEffective(LocalDate.now())
-                        .dateLivraison(null)
-                        .locationLivraison(workflowDto.getMotif())
-                        .build();
-
-                VenteResponseDto venteCreated = venteService.createFromProforma(proformaId, venteRequest);
-                log.info("Pro-forma {} transformé en vente {}", proforma.getRefe(), venteCreated.getRefe());
                 
-                // Ajouter la référence de la vente créée aux détails
-                if (workflowDto.getMotif() == null || workflowDto.getMotif().isEmpty()) {
-                    workflowDto.setMotif("Vente créée: " + venteCreated.getRefe());
-                } else {
-                    workflowDto.setMotif(workflowDto.getMotif() + " | Vente créée: " + venteCreated.getRefe());
-                }
-                break;
-
             default:
-                throw new RuntimeException("Action inconnue: " + workflowDto.getAction());
+                throw new RuntimeException("Action inconnue: " + action);
         }
-
+        
         proforma.setProcess(nouveauProcess);
         ProformaVente updatedProforma = proformaVenteRepository.save(proforma);
-
-        String details = "Changement de statut: " + oldProforma.getProcess().getProcessName() + " → "
-                + nouveauProcess.getProcessName();
-        if (workflowDto.getMotif() != null && !workflowDto.getMotif().isEmpty()) {
-            details += " | Motif: " + workflowDto.getMotif();
-        }
-        logAction("UPDATE", oldProforma, updatedProforma, details);
-
+        
+        log.info("Pro-forma {} - Statut changé vers: {}", proforma.getRefe(), nouveauProcess.getProcessName());
         return mapToResponseDto(updatedProforma);
     }
 
     /**
-     * 2.5 Contrôles - Vérifier qu'un commercial ne valide pas ses propres remises
+     * Envoyer un proforma (Brouillon → Envoyé)
      */
-    public boolean canUserValidateRemise(Integer proformaId, Utilisateur validateur) {
-        ProformaVente proforma = proformaVenteRepository.findById(proformaId)
-                .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé"));
-
-        // Récupérer le créateur du pro-forma depuis les logs d'audit
-        List<AuditLog> logs = auditLogRepository.findAll().stream()
-                .filter(log -> log.getClasses().equals("ProformaVente")
-                        && log.getIdsClasses().equals(String.valueOf(proformaId))
-                        && log.getAction().getActionName().equals("CREATE"))
-                .toList();
-
-        if (!logs.isEmpty()) {
-            Utilisateur createur = logs.get(0).getUtilisateur();
-
-            // Un commercial (niveau 30-39) ne peut pas valider ses propres remises
-            String createurRoleCode = createur.getRole().getRoleCode();
-            if (createurRoleCode.equals("EMP_VENTE") && createur.getId().equals(validateur.getId())) {
-                return false;
-            }
-        }
-
-        return true;
+    @Transactional
+    public ProformaVenteResponseDto envoyerProforma(Integer proformaId) {
+        return changerStatutProforma(proformaId, "ENVOYER", null);
     }
 
     /**
-     * Valider une remise exceptionnelle (nécessite responsable ou admin)
+     * Accepter un proforma (Envoyé → Accepté)
      */
     @Transactional
-    public ProformaVenteResponseDto validerRemiseExceptionnelle(Integer proformaId, String motif) {
-        Utilisateur validateur = getCurrentUser();
+    public ProformaVenteResponseDto accepterProforma(Integer proformaId, String motif) {
+        return changerStatutProforma(proformaId, "ACCEPTER", motif);
+    }
 
-        if (!validateur.getRole().getRoleCode().equals("RESP_VENTE")
-                && !validateur.getRole().getRoleCode().equals("ADMIN")) {
-            throw new RuntimeException("Seul un responsable ou un admin peut valider une remise exceptionnelle");
+    /**
+     * Refuser un proforma (Envoyé → Refusé)
+     */
+    @Transactional
+    public ProformaVenteResponseDto refuserProforma(Integer proformaId, String motif) {
+        return changerStatutProforma(proformaId, "REFUSER", motif);
+    }
+
+
+    private Utilisateur getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String email = authentication.getName();
+            return utilisateurRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + email));
         }
-
-        if (!canUserValidateRemise(proformaId, validateur)) {
-            throw new RuntimeException("Un commercial ne peut pas valider ses propres remises exceptionnelles");
-        }
-
-        ProformaVente proforma = proformaVenteRepository.findById(proformaId)
-                .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé"));
-
-        String details = "VALIDATION REMISE EXCEPTIONNELLE - Remise: " + proforma.getRemisePourcentage() + "%";
-        if (motif != null && !motif.isEmpty()) {
-            details += " | Motif: " + motif;
-        }
-        details += " | Validé par: " + validateur.getNom();
-
-        logAction("UPDATE", proforma, proforma, details);
-
-        return mapToResponseDto(proforma);
+        throw new RuntimeException("Aucun utilisateur authentifié");
     }
 }

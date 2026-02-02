@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import tarificationApi from '../../api/tarificationApi';
+import { tarificationApi } from '../../api/tarificationApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const TarificationHistorique = () => {

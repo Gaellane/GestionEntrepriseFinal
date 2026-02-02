@@ -50,34 +50,56 @@ import LivraisonDetail from "../pages/livraison/LivraisonDetail";
 import DashboardKpi from "../pages/kpi/DashboardKpi";
 import ExportVentes from "../pages/kpi/ExportVentes";
 
+// Caisse
+import CaisseMouvementGeneralForm from "../pages/caisse/CaisseMouvementGeneralForm";
+import EncaissementVenteForm from "../pages/caisse/EncaissementVenteForm";
+
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Routes publiques */}
       <Route path='/login' element={<Login />} />
+      <Route path="/" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      
+      {/* Routes non protégées pour le stock (legacy) */}
+      <Route path='/achat' element={<ProformaAchatSaisie />} />
+      <Route path='/demande' element={<ProformaAchatSaisie />} />
+      <Route path='/stock' element={<MvtStockSaisie />} />
+      <Route path='/stock/:type' element={<MvtStockSaisie />} />
+
+      {/* Routes protégées */}
       <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
-
+        {/* Accueil */}
         <Route path="/home" element={<HomePage />} />
+        
+        {/* Articles */}
+        <Route path="/articles" element={<ListeArticle />} />
+        
+        {/* Achats */}
+        <Route path="/achats/saisie" element={<AchatSaisie />} />
+        <Route path="/achats/demandes" element={<AchatList />} />
         <Route path="/achats/proforma" element={<ProformaAchatSaisie />} />
-        <Route path="/vente/proforma" element={<ProformaAchatSaisie />} />
+        <Route path="/achats/fiche/:id" element={<AchatFiche />} />
 
-        {/* Routes pour la gestion des clients */}
+        {/* Ventes et Clients */}
         <Route path="/clients" element={<ClientList />} />
         <Route path="/clients/create" element={<ClientForm />} />
         <Route path="/clients/edit/:id" element={<ClientForm />} />
         <Route path="/clients/:id" element={<ClientDetail />} />
 
-        {/* Routes pour la tarification */}
+        {/* Tarification */}
         <Route path="/tarification" element={<TarificationList />} />
         <Route path="/tarification/historique/:articleEntityId" element={<TarificationHistorique />} />
 
-        {/* Routes pour les pro-formas de vente */}
+        {/* Pro-formas de vente */}
         <Route path="/proforma-ventes" element={<ProformaVenteList />} />
         <Route path="/proforma-ventes/nouveau" element={<ProformaVenteForm />} />
         <Route path="/proforma-ventes/:id" element={<ProformaVenteDetail />} />
         <Route path="/proforma-ventes/:id/modifier" element={<ProformaVenteForm />} />
+        <Route path="/vente/proforma" element={<ProformaAchatSaisie />} />
 
-        {/* Routes pour les commandes clients (ventes) */}
+        {/* Commandes clients (ventes) */}
         <Route path="/ventes" element={<VenteList />} />
         <Route path="/ventes/nouveau" element={<VenteForm />} />
         <Route path="/ventes/nouveau/transformation" element={<VenteForm />} />
@@ -85,73 +107,59 @@ const AppRoutes = () => {
         <Route path="/ventes/:id" element={<VenteDetail />} />
         <Route path="/ventes/:id/modifier" element={<VenteForm />} />
 
-        {/* Routes pour les configurations */}
-        <Route path="/configurations" element={<ConfigurationList />} />
-
-        {/* Routes pour les livraisons */}
+        {/* Livraisons */}
         <Route path="/livraison/liste" element={<LivraisonList />} />
         <Route path="/livraison/enregistrement" element={<LivraisonForm />} />
         <Route path="/livraison/:id" element={<LivraisonDetail />} />
 
-        {/* Routes pour le reporting / KPI */}
+        {/* Caisse */}
+        <Route path="/caisse/mouvements/creer" element={<CaisseMouvementGeneralForm />} />
+        <Route path="/caisse/mouvements/encaisser" element={<EncaissementVenteForm />} />
+
+        {/* Reporting / KPI */}
         <Route path="/reporting/dashboard" element={<DashboardKpi />} />
         <Route path="/reporting/export" element={<ExportVentes />} />
 
-      </Route>
-      <Route />
+        {/* Stock et Inventaire */}
+        <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
+        <Route path="/stock/ajustements" element={<AjustementStock/>} />
+        <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
+        <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
+        <Route path="/stock/1" element={<MvtStockSaisie />} />
+        <Route path="/stock/2" element={<MvtStockSaisie />} />
+        <Route path="/stock/transfer" element={<MvtStockSaisie />} />
 
+        {/* Inventaire */}
+        <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />
+        <Route path="/inventaire/form/new" element={<InventaireForm/>} />
+        <Route path="/inventaire/form/:id" element={<InventaireForm/>} />
+        <Route path="/inventaire/perform/:id" element={<InventairePerform/>} />
+
+        {/* Configuration */}
+        <Route path="/configurations" element={<ConfigurationList />} />
+
+        {/* Administration */}
+        <Route path="/admin/audit-logs" element={<AuditLogs/>} />
+        <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
+        <Route path="/admin/roles-validation" element={<RolesValidation/>} />
+        
+        <Route path="/articles">
+          <Route index element={<ListeArticle />} />
+        </Route>
+        <Route path="/achats">
+          <Route path="saisie" element={<AchatSaisie />} />
+          <Route path="demandes" element={<AchatList />} />
+          <Route path="fiche/:id" element={<AchatFiche />} />
+          <Route path="commande/saisie/:id" element={<DemandeProforma />} />
+          <Route path="proforma/saisie/:achatId/:fournisseurId" element={<ProformaSaisie />} />
+          <Route path="livraison/saisie/:achatId" element={<LivraisonSaisie />} />
+          <Route path="livraison/reception/:achatId" element={<ReceptionSaisie />} />
+          <Route path="kpi" element={<AchatKpiDashboard />} />
+        </Route>
+
+      </Route>
     </Routes>
   )
-    return (
-        <Routes>
-
-          <Route path='/' element={<Login />} />
-          <Route path='/achat' element={<ProformaSaisie />} />
-          <Route path='/demande' element={<ProformaSaisie />} />
-
-          {/* Stock group */}
-          <Route path='/stock' element={<MvtStockSaisie />} />
-          <Route path='/stock/:type' element={<MvtStockSaisie />} />
-
-          <Route path='/login' element={<Login />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />          
-          <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
-            <Route path="/home" element={<HomePage />} />          
-          
-
-            <Route path="/articles">
-              <Route index element={<ListeArticle />} />
-            </Route>
-            <Route path="/achats">
-              <Route path="saisie" element={<AchatSaisie />} />
-              <Route path="demandes" element={<AchatList />} />
-              <Route path="fiche/:id" element={<AchatFiche />} />
-              <Route path="commande/saisie/:id" element={<DemandeProforma />} />
-              <Route path="proforma/saisie/:achatId/:fournisseurId" element={<ProformaSaisie />} />
-              <Route path="livraison/saisie/:achatId" element={<LivraisonSaisie />} />
-              <Route path="livraison/reception/:achatId" element={<ReceptionSaisie />} />
-              <Route path="kpi" element={<AchatKpiDashboard />} />
-            </Route>
-
-            <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
-            <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />
-            <Route path="/inventaire/form/:id" element={<InventaireForm/>} />
-            <Route path="/inventaire/perform/:id" element={<InventairePerform/>} />
-            <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
-            <Route path="/stock/ajustements" element={<AjustementStock/>} />
-            <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
-            
-            <Route path="/admin/audit-logs" element={<AuditLogs/>} />
-            <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
-            <Route path="/admin/roles-validation" element={<RolesValidation/>} />
-
-        
-          
-          </Route>
-          
-
-        </Routes>
-    )
 };
 
 export default AppRoutes;

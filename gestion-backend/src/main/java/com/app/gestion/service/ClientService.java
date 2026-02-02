@@ -35,7 +35,6 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public PageResponseDto<ClientResponseDto> getAllClients(Pageable pageable) {
@@ -197,6 +196,7 @@ public class ClientService {
 
     private String convertClientToJson(Client client) {
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> clientMap = new HashMap<>();
             clientMap.put("id", client.getId());
             clientMap.put("clientNom", client.getClientNom());

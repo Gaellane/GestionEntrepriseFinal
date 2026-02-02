@@ -29,7 +29,7 @@ public class TarificationService {
     private final ArticleEntityRepository articleEntityRepository;
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
-    private final ObjectMapper objectMapper;
+
 
     @Transactional(readOnly = true)
     public List<ArticlePrixResponseDto> getAllPrixByEntityId(Integer entityId) {
@@ -67,6 +67,32 @@ public class TarificationService {
         ArticlePrix prix = articlePrixRepository.findLatestPrixByArticleEntityId(articleEntityId)
                 .orElseThrow(() -> new RuntimeException("Aucun prix trouvé pour cet article"));
         return mapToResponseDto(prix);
+    }
+
+    @Transactional(readOnly = true)
+    public ArticlePrixResponseDto getLatestPrixByArticleId(Integer articleId) {
+        // Récupérer l'ArticleEntity actif pour cet article
+        ArticleEntity articleEntity = articleEntityRepository.findActiveByArticleId(articleId)
+                .orElseThrow(() -> new RuntimeException("Aucune entité active trouvée pour cet article"));
+        
+        // Récupérer le dernier prix pour cette ArticleEntity
+        ArticlePrix prix = articlePrixRepository.findLatestPrixByArticleEntityId(articleEntity.getId())
+                .orElse(null);
+        
+        if (prix == null) {
+            // Retourner un prix par défaut si aucun prix n'est trouvé
+            return ArticlePrixResponseDto.builder()
+                    .articleEntityId(articleEntity.getId())
+                    .articleNom(articleEntity.getArticle().getArticleNom())
+                    .articleReference(articleEntity.getArticle().getRefe())
+                    .entityName(articleEntity.getEntity().getEntityName())
+                    .prix(0.0)
+                    .prixVente(0.0)
+                    .dateEntree(LocalDateTime.now())
+                    .build();
+        }
+        
+        return mapToResponseDtoWithPrixVente(prix);
     }
 
     @Transactional
@@ -157,6 +183,20 @@ public class TarificationService {
                 .articleReference(prix.getArticleEntity().getArticle().getRefe())
                 .entityName(prix.getArticleEntity().getEntity().getEntityName())
                 .prix(prix.getPrix())
+                .prixVente(prix.getPrix()) // Par défaut, prixVente = prix
+                .dateEntree(prix.getDateEntree())
+                .build();
+    }
+
+    private ArticlePrixResponseDto mapToResponseDtoWithPrixVente(ArticlePrix prix) {
+        return ArticlePrixResponseDto.builder()
+                .id(prix.getId())
+                .articleEntityId(prix.getArticleEntity().getId())
+                .articleNom(prix.getArticleEntity().getArticle().getArticleNom())
+                .articleReference(prix.getArticleEntity().getArticle().getRefe())
+                .entityName(prix.getArticleEntity().getEntity().getEntityName())
+                .prix(prix.getPrix())
+                .prixVente(prix.getPrix()) // Utiliser le prix comme prix de vente
                 .dateEntree(prix.getDateEntree())
                 .build();
     }
@@ -193,6 +233,7 @@ public class TarificationService {
 
     private String convertPrixToJson(ArticlePrix prix) {
         try {
+            ObjectMapper objectMapper = new ObjectMapper();    
             Map<String, Object> prixMap = new HashMap<>();
             prixMap.put("id", prix.getId());
             prixMap.put("articleEntityId", prix.getArticleEntity().getId());

@@ -16,7 +16,9 @@ import {
   ExclamationCircleIcon,
   ChartPieIcon,
   EyeIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
+  DocumentArrowDownIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 function formatNumber(v) {
@@ -334,6 +336,161 @@ export default function ArticlesRemaining() {
     );
   };
 
+  // Fonctions d'export
+  const exportToPDF = () => {
+    const element = document.createElement('a');
+    const content = generatePDFContent();
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    element.href = url;
+    element.download = `niveaux-stock-${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    URL.revokeObjectURL(url);
+  };
+
+  const generatePDFContent = () => {
+    const currentDate = new Date().toLocaleDateString('fr-FR');
+    const filteredStats = {
+      depot: depots.find(d => d.id === parseInt(filters.depotId))?.depotName || 'Tous les dépôts',
+      category: categories.find(c => c.id === parseInt(filters.categoryId))?.categorieName || 'Toutes les catégories',
+      search: filters.search || 'Aucun filtre de recherche'
+    };
+
+    let tableRows = list.map((item, index) => `
+      <tr style="${index % 2 === 0 ? 'background-color: #f9fafb;' : ''}">
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.articleNom || `Article ${item.articleId}`}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.articleRef || '-'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.categoryName || '-'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">${formatNumber(item.quantiteRestante)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
+          <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; ${
+            parseFloat(item.quantiteRestante) === 0 ? 'background-color: #fef2f2; color: #dc2626;' :
+            parseFloat(item.quantiteRestante) < 10 ? 'background-color: #fef3c7; color: #d97706;' :
+            'background-color: #ecfdf5; color: #059669;'
+          }">
+            ${
+              parseFloat(item.quantiteRestante) === 0 ? 'Épuisé' :
+              parseFloat(item.quantiteRestante) < 5 ? 'Faible' :
+              parseFloat(item.quantiteRestante) < 20 ? 'Moyen' : 'Bon'
+            }
+          </span>
+        </td>
+      </tr>`).join('');
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Niveaux de Stock - ${currentDate}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; color: #374151; }
+        .header { border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
+        .title { color: #1f2937; font-size: 28px; font-weight: bold; margin: 0; }
+        .subtitle { color: #6b7280; font-size: 16px; margin-top: 5px; }
+        .filters { background-color: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #4f46e5; }
+        .stat-label { color: #6b7280; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #4f46e5; color: white; padding: 12px 8px; text-align: left; font-weight: 600; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1 class="title">📊 Niveaux de Stock</h1>
+        <p class="subtitle">Rapport généré le ${currentDate}</p>
+      </div>
+      
+      <div class="filters">
+        <h3>Filtres appliqués:</h3>
+        <p><strong>Dépôt:</strong> ${filteredStats.depot}</p>
+        <p><strong>Catégorie:</strong> ${filteredStats.category}</p>
+        <p><strong>Recherche:</strong> ${filteredStats.search}</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value">${stats.totalArticles}</div>
+          <div class="stat-label">Articles total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${formatNumber(stats.totalQuantity)}</div>
+          <div class="stat-label">Quantité totale</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${formatNumber(stats.averageQuantity)}</div>
+          <div class="stat-label">Moyenne par article</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Article</th>
+            <th>Référence</th>
+            <th>Catégorie</th>
+            <th style="text-align: right;">Quantité</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p>Rapport généré automatiquement - ${list.length} articles listés</p>
+      </div>
+    </body>
+    </html>`;
+  };
+
+  const exportToExcel = () => {
+    // Export Excel (CSV) — uniquement le tableau de liste
+    if (!list || list.length === 0) {
+      alert('Aucune donnée à exporter');
+      return;
+    }
+
+    const headers = ['Article', 'Référence', 'Catégorie', 'Quantité Restante', 'Statut'];
+    const rows = list.map(item => {
+      const statut = parseFloat(item.quantiteRestante) === 0 ? 'Épuisé' :
+        parseFloat(item.quantiteRestante) < 5 ? 'Faible' :
+        parseFloat(item.quantiteRestante) < 20 ? 'Moyen' : 'Bon';
+
+      return [
+        item.articleNom || `Article ${item.articleId}`,
+        item.articleRef || '-',
+        item.categoryName || '-',
+        (parseFloat(item.quantiteRestante) || 0).toString(),
+        statut
+      ];
+    });
+
+    const csvArray = [headers, ...rows];
+    const csvContent = csvArray.map(row => row.map(cell => {
+      const cellStr = String(cell || '');
+      return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')
+        ? `"${cellStr.replace(/"/g, '""')}"`
+        : cellStr;
+    }).join(',')).join('\n');
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `niveaux-stock-table-${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Agrégation pour le pie chart
   const aggregation = {};
   list.forEach(row => {
@@ -357,13 +514,34 @@ export default function ArticlesRemaining() {
                 <p className="text-gray-600 mt-1">Analyse des quantités restantes par article et catégorie</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowChart(!showChart)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {showChart ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-              {showChart ? 'Masquer graphique' : 'Afficher graphique'}
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Boutons d'export */}
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg transform hover:scale-105"
+                title="Exporter en PDF"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5" />
+                PDF
+              </button>
+              
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg transform hover:scale-105"
+                title="Exporter en Excel"
+              >
+                <TableCellsIcon className="w-5 h-5" />
+                Excel
+              </button>
+              
+              <button
+                onClick={() => setShowChart(!showChart)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                {showChart ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                {showChart ? 'Masquer graphique' : 'Afficher graphique'}
+              </button>
+            </div>
           </div>
 
           {/* Cartes de statistiques */}

@@ -46,5 +46,6 @@ public class VenteResponseDto {
 
     // Process
     private Integer processId;
+    private Integer processValeur;
     private String processName;
 }

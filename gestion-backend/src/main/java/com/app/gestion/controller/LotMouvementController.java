@@ -1,8 +1,6 @@
 package com.app.gestion.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,8 +18,6 @@ import com.app.gestion.dto.stock.MovementFormData;
 import com.app.gestion.dto.stock.MovementRequest;
 import com.app.gestion.dto.stock.LotDTO;
  
-import com.app.gestion.model.Lot;
-import com.app.gestion.model.Utilisateur;
 import com.app.gestion.service.ArticleService;
 import com.app.gestion.service.DepotService;
 import com.app.gestion.service.LotService;

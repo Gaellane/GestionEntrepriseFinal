@@ -63,3 +63,19 @@ export const getAcceptedProformas = async () => {
     });
     return response.data;
 };
+
+/**
+ * Valider commercialement une commande (POST /ventes/{id}/valider)
+ */
+export const validerCommande = async (id) => {
+    const response = await api.post(`/ventes/${id}/valider`);
+    return response.data;
+};
+
+/**
+ * Annuler une commande (POST /ventes/{id}/annuler) - body: { motif }
+ */
+export const annulerCommande = async (id, motif = '') => {
+    const response = await api.post(`/ventes/${id}/annuler`, { motif });
+    return response.data;
+};

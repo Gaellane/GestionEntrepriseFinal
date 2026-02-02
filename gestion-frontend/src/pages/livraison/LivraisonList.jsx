@@ -184,7 +184,7 @@ const LivraisonList = () => {
                                             >
                                                 Détails
                                             </button>
-                                            {livraison.processValeur < 90 && (
+                                            {livraison.processValeur < 50 && (
                                                 <>
                                                     <button
                                                         onClick={() => handleValider(livraison.id)}

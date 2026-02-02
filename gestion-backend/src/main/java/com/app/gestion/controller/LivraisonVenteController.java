@@ -88,4 +88,14 @@ public class LivraisonVenteController {
                 livraisonLigneId, depotId, methode);
         return ResponseEntity.ok(lots);
     }
+
+    /**
+     * Valider/Terminer une livraison
+     */
+    @PutMapping("/{id}/valider")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESP_MAGASIN', 'EMP_MAGASIN')")
+    public ResponseEntity<LivraisonVenteResponseDto> validerLivraison(@PathVariable Integer id) {
+        LivraisonVenteResponseDto livraison = livraisonVenteService.validerLivraison(id);
+        return ResponseEntity.ok(livraison);
+    }
 }
