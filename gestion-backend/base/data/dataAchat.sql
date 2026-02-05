@@ -7,11 +7,8 @@ INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES
 ('LIVRER' , 'LI' ,41),
 ('VALIDER FACTURE' , 'VF' ,51),
 ('CLOTURER' , 'CL' ,61) ,
-('ANNULER' , 'AN' ,0);
-
-INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES 
-('DEMANDE PROFORMA' , 'DP' ,25);
-INSERT INTO achat_processes (process_name , abreviation , valeur) VALUES 
+('ANNULER' , 'AN' ,0),
+('DEMANDE PROFORMA' , 'DP' ,25),
 ('RECEPTIONNER' , 'RE' ,45);
 
 
@@ -22,7 +19,5 @@ INSERT INTO bon_commande_processes (process_name , abreviation , valeur) VALUES
 ('EN COMMANDE' , 'EC' ,21),
 ('LIVRER' , 'LI' ,41),
 ('CLOTURER' , 'CL' ,61) ,
-('ANNULER' , 'AN' ,0);
-
-INSERT INTO bon_commande_processes (process_name , abreviation , valeur) VALUES 
+('ANNULER' , 'AN' ,0),
 ('RECEPTIONNER' , 'RE' ,45);
