@@ -49,7 +49,7 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
                         "AND l.quantiteRestante > 0 " +
                         "AND l.datePeremption IS NOT NULL " +
                         "AND l.datePeremption > CURRENT_TIMESTAMP " +
-                        "ORDER BY l.datePeremption ASC")
+                        "ORDER BY l.datePeremption DESC")
         List<Lot> findLotsDisponiblesFEFO(@Param("articleId") Integer articleId,
                         @Param("depotId") Integer depotId);
 
