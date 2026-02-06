@@ -13,3 +13,23 @@ jwt.expiration=86400000
 
 logging.level.org.springframework.security=DEBUG
 server.port=8180
+
+groq.api.key=cle_api_mila_alaina_any_am_mika
+groq.api.model=llama-3.3-70b-versatile
+# Alternative models:
+# - llama-3.1-70b-versatile
+# - mixtral-8x7b-32768
+# - gemma-7b-it
+
+# AI Orchestrator Settings
+ai.orchestrator.max-iterations=5
+ai.orchestrator.log-tool-calls=true
+ai.orchestrator.strict-permissions=true
+
+# AI Security Settings
+ai.security.allow-dangerous-tools=false
+ai.security.require-authentication=true
+
+# Groq Client Settings
+ai.groq.timeout=30
+ai.groq.max-retries=3
