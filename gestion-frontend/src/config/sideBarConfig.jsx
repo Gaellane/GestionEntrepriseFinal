@@ -24,6 +24,7 @@ import {
   CheckBadgeIcon,
   CurrencyDollarIcon,
   Cog6ToothIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 export const SIDEBAR_CONFIG = {
@@ -265,6 +266,23 @@ export const SIDEBAR_CONFIG = {
           icon: <DocumentTextIcon className="w-4 h-4" />,
           permission: PERMISSIONS.VIEW_SALES
         }
+      ]
+    },
+    {
+      id: 'prediction',
+      label: 'Prédiction IA',
+      icon: <SparklesIcon className="w-5 h-5" />,
+      roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.RESP_VENTE],
+      permission: PERMISSIONS.VIEW_DASHBOARD,
+      subItems: [
+        {
+          id: 'prediction-dashboard',
+          label: 'Dashboard Prédictions',
+          path: '/prediction/dashboard',
+          icon: <ChartBarIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_MAGASIN, ROLES.RESP_VENTE],
+          permission: PERMISSIONS.VIEW_DASHBOARD,
+        },
       ]
     },
     {

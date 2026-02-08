@@ -23,10 +23,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler,
-  RadialLinearScale
+  Filler
 } from 'chart.js';
-import { Bar, Doughnut, Line, Radar } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import stockKpiApi from '../../api/stockKpiApi';
 import stockApi from '../../api/stock';
 
@@ -41,8 +40,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler,
-  RadialLinearScale
+  Filler
 );
 
 export default function DashboardRespMagasin() {
@@ -209,25 +207,29 @@ export default function DashboardRespMagasin() {
 
     const sortedDetails = [...kpiData.details]
       .sort((a, b) => Math.abs(b.ecart || 0) - Math.abs(a.ecart || 0))
-      .slice(0, 10);
+      .slice(0, 10)
+      .reverse(); // Reverse pour que le plus gros soit en haut (horizontal)
 
     return {
-      labels: sortedDetails.map(d => d.articleNom?.substring(0, 20) + '...' || `Article ${d.articleId}`),
+      labels: sortedDetails.map(d => d.articleNom || d.articleRef || `Article ${d.articleId}`),
       datasets: [
         {
-          label: 'Écart (Physique - Théorique)',
-          data: sortedDetails.map(d => d.ecart || 0),
-          backgroundColor: sortedDetails.map(d =>
-            d.ecart > 0 ? 'rgba(16, 185, 129, 0.7)' :
-              d.ecart < 0 ? 'rgba(239, 68, 68, 0.7)' :
-                'rgba(156, 163, 175, 0.7)'
-          ),
-          borderColor: sortedDetails.map(d =>
-            d.ecart > 0 ? 'rgb(16, 185, 129)' :
-              d.ecart < 0 ? 'rgb(239, 68, 68)' :
-                'rgb(156, 163, 175)'
-          ),
+          label: 'Surplus (stock en trop)',
+          data: sortedDetails.map(d => Math.max(0, d.ecart || 0)),
+          backgroundColor: 'rgba(16, 185, 129, 0.75)',
+          borderColor: 'rgb(16, 185, 129)',
           borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 18,
+        },
+        {
+          label: 'Manquant (stock insuffisant)',
+          data: sortedDetails.map(d => Math.min(0, d.ecart || 0)),
+          backgroundColor: 'rgba(239, 68, 68, 0.75)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 18,
         }
       ]
     };
@@ -237,33 +239,38 @@ export default function DashboardRespMagasin() {
   const getPrecisionDistributionData = () => {
     if (!kpiData?.details) return null;
 
+    const total = kpiData.details.length || 1;
     const excellent = kpiData.details.filter(d => (d.tauxPrecision || 0) >= 95).length;
     const good = kpiData.details.filter(d => (d.tauxPrecision || 0) >= 85 && (d.tauxPrecision || 0) < 95).length;
     const poor = kpiData.details.filter(d => (d.tauxPrecision || 0) < 85).length;
 
+    const pct = (n) => ((n / total) * 100).toFixed(0);
+
     return {
-      labels: ['Excellente (≥95%)', 'Bonne (85-94%)', 'Insuffisante (<85%)'],
+      labels: [
+        `Excellente ≥95% — ${excellent} articles (${pct(excellent)}%)`,
+        `Correcte 85-94% — ${good} articles (${pct(good)}%)`,
+        `Insuffisante <85% — ${poor} articles (${pct(poor)}%)`
+      ],
       datasets: [
         {
           data: [excellent, good, poor],
           backgroundColor: [
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(239, 68, 68, 0.8)'
+            'rgba(16, 185, 129, 0.85)',
+            'rgba(251, 191, 36, 0.85)',
+            'rgba(239, 68, 68, 0.85)'
           ],
-          borderColor: [
-            'rgb(16, 185, 129)',
-            'rgb(245, 158, 11)',
-            'rgb(239, 68, 68)'
-          ],
-          borderWidth: 2,
+          borderColor: '#fff',
+          borderWidth: 3,
+          hoverOffset: 12,
+          spacing: 2,
         }
       ]
     };
   };
 
-  // Données pour le graphique radar par catégorie
-  const getCategoryRadarData = () => {
+  // Données pour le graphique barres groupées par catégorie
+  const getCategoryBarData = () => {
     if (!kpiData?.details) return null;
 
     const categoriesMap = new Map();
@@ -273,40 +280,41 @@ export default function DashboardRespMagasin() {
         categoriesMap.set(categoryName, {
           count: 0,
           totalPrecision: 0,
+          totalEcart: 0,
           totalValue: 0
         });
       }
       const categoryData = categoriesMap.get(categoryName);
       categoryData.count++;
       categoryData.totalPrecision += detail.tauxPrecision || 0;
+      categoryData.totalEcart += Math.abs(detail.ecart || 0);
       categoryData.totalValue += detail.valeurStock || 0;
     });
 
     const categoriesArray = Array.from(categoriesMap.entries())
-      .slice(0, 8)
-      .sort((a, b) => b[1].totalValue - a[1].totalValue);
+      .sort((a, b) => b[1].totalValue - a[1].totalValue)
+      .slice(0, 8);
 
     return {
-      labels: categoriesArray.map(([name]) => name.substring(0, 15) + (name.length > 15 ? '...' : '')),
+      labels: categoriesArray.map(([name]) => name),
       datasets: [
         {
           label: 'Précision moyenne (%)',
-          data: categoriesArray.map(([, data]) => data.totalPrecision / data.count),
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          data: categoriesArray.map(([, data]) => +(data.totalPrecision / data.count).toFixed(1)),
+          backgroundColor: 'rgba(59, 130, 246, 0.75)',
           borderColor: 'rgb(59, 130, 246)',
-          borderWidth: 2,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
+          borderWidth: 1,
+          borderRadius: 6,
+          yAxisID: 'y',
         },
         {
-          label: 'Valeur stock (normalisée)',
-          data: categoriesArray.map(([, data]) => {
-            const maxValue = Math.max(...categoriesArray.map(([, d]) => d.totalValue));
-            return (data.totalValue / maxValue) * 100;
-          }),
-          backgroundColor: 'rgba(16, 185, 129, 0.2)',
-          borderColor: 'rgb(16, 185, 129)',
-          borderWidth: 2,
-          pointBackgroundColor: 'rgb(16, 185, 129)',
+          label: 'Nb articles',
+          data: categoriesArray.map(([, data]) => data.count),
+          backgroundColor: 'rgba(168, 85, 247, 0.65)',
+          borderColor: 'rgb(168, 85, 247)',
+          borderWidth: 1,
+          borderRadius: 6,
+          yAxisID: 'y1',
         }
       ]
     };
@@ -314,25 +322,51 @@ export default function DashboardRespMagasin() {
 
   // Options pour les graphiques
   const barChartOptions = {
+    indexAxis: 'y',
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+          padding: 16,
+          font: { size: 12, weight: '500' }
+        }
       },
       tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8,
         callbacks: {
           label: (context) => {
-            return `${context.dataset.label}: ${formatNumber(context.raw)}`;
+            const val = context.raw;
+            if (val === 0) return null;
+            const sign = val > 0 ? '+' : '';
+            return ` ${context.dataset.label}: ${sign}${formatNumber(val)} unités`;
           }
         }
       }
     },
     scales: {
-      y: {
-        beginAtZero: true,
+      x: {
         title: {
           display: true,
-          text: 'Écart en quantité'
+          text: 'Écart en unités (surplus ► / ◄ manquant)',
+          font: { size: 12, weight: '500' },
+          color: '#6b7280'
+        },
+        grid: { color: 'rgba(0,0,0,0.06)' },
+        ticks: { font: { size: 11 } }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          font: { size: 11, weight: '500' },
+          color: '#374151'
         }
       }
     }
@@ -340,22 +374,86 @@ export default function DashboardRespMagasin() {
 
   const doughnutOptions = {
     responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
     plugins: {
       legend: {
         position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 14,
+          font: { size: 12, weight: '500' },
+          color: '#374151'
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: (context) => {
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const pct = ((context.raw / total) * 100).toFixed(0);
+            return ` ${context.raw} articles — ${pct}% du total`;
+          }
+        }
       }
     }
   };
 
-  const radarOptions = {
+  const categoryBarOptions = {
     responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+          padding: 16,
+          font: { size: 12, weight: '500' }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 12 },
+        padding: 12,
+        cornerRadius: 8
+      }
+    },
     scales: {
-      r: {
+      y: {
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Précision moyenne (%)',
+          font: { size: 12, weight: '500' },
+          color: '#3b82f6'
+        },
         beginAtZero: true,
         max: 100,
-        ticks: {
-          stepSize: 20
-        }
+        grid: { color: 'rgba(0,0,0,0.06)' },
+        ticks: { font: { size: 11 }, color: '#3b82f6' }
+      },
+      y1: {
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Nombre d\'articles',
+          font: { size: 12, weight: '500' },
+          color: '#a855f7'
+        },
+        beginAtZero: true,
+        grid: { drawOnChartArea: false },
+        ticks: { font: { size: 11 }, color: '#a855f7', stepSize: 1 }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: '500' }, color: '#374151' }
       }
     }
   };
@@ -595,10 +693,11 @@ export default function DashboardRespMagasin() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Graphique des écarts */}
                 <div className="bg-white rounded-xl shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Top 10 des écarts les plus importants
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    Top 10 — Écarts les plus importants
                   </h3>
-                  <div className="h-80">
+                  <p className="text-sm text-gray-500 mb-4">Différence entre stock physique et théorique par article</p>
+                  <div style={{ height: '380px' }}>
                     {getEcartChartData() && (
                       <Bar data={getEcartChartData()} options={barChartOptions} />
                     )}
@@ -607,10 +706,11 @@ export default function DashboardRespMagasin() {
 
                 {/* Graphique de répartition des précisions */}
                 <div className="bg-white rounded-xl shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Répartition des niveaux de précision
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    Qualité du stock
                   </h3>
-                  <div className="h-80 flex items-center justify-center">
+                  <p className="text-sm text-gray-500 mb-4">Répartition des articles par niveau de précision</p>
+                  <div style={{ height: '340px' }} className="flex items-center justify-center">
                     {getPrecisionDistributionData() && (
                       <Doughnut data={getPrecisionDistributionData()} options={doughnutOptions} />
                     )}
@@ -758,14 +858,15 @@ export default function DashboardRespMagasin() {
           {activeTab === 'analytics' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Radar Chart par catégorie */}
+                {/* Bar Chart par catégorie */}
                 <div className="bg-white rounded-xl shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
                     Analyse par catégorie
                   </h3>
-                  <div className="h-96">
-                    {getCategoryRadarData() && (
-                      <Radar data={getCategoryRadarData()} options={radarOptions} />
+                  <p className="text-sm text-gray-500 mb-4">Précision moyenne et nombre d'articles par catégorie</p>
+                  <div style={{ height: '380px' }}>
+                    {getCategoryBarData() && (
+                      <Bar data={getCategoryBarData()} options={categoryBarOptions} />
                     )}
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.netty.http.client.HttpClient;
 
 @Slf4j
 @Component
@@ -35,10 +37,19 @@ public class GroqClient {
     
     public GroqClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+
+        HttpClient httpClient = HttpClient.create()
+            // Timeout réseau
+            .responseTimeout(Duration.ofSeconds(45));
+
         this.webClient = WebClient.builder()
             .baseUrl("https://api.groq.com/openai/v1")
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+            .defaultHeader(HttpHeaders.USER_AGENT, "gestion-ai/1.0")
+            .codecs(configurer ->
+                configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)
+            )
             .build();
     }
     
