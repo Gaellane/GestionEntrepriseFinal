@@ -146,6 +146,30 @@ public class CaisseMouvementService {
     }
 
     /**
+     * Encaissements sur une période
+     */
+    @Transactional(readOnly = true)
+    public Double getEncaissements(LocalDateTime dateDebut, LocalDateTime dateFin) {
+        return caisseMouvementRepository.sumEncaissements(dateDebut, dateFin);
+    }
+
+    /**
+     * Remboursements sur une période
+     */
+    @Transactional(readOnly = true)
+    public Double getRemboursements(LocalDateTime dateDebut, LocalDateTime dateFin) {
+        return caisseMouvementRepository.sumRemboursements(dateDebut, dateFin);
+    }
+
+    /**
+     * Mouvements agrégés par type sur une période
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getMouvementsParType(LocalDateTime dateDebut, LocalDateTime dateFin) {
+        return caisseMouvementRepository.sumByTypeMouvement(dateDebut, dateFin);
+    }
+
+    /**
      * Récupérer l'entité de l'utilisateur connecté
      */
     private Entity getCurrentUserEntity() {

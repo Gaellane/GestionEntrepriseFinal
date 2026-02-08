@@ -52,6 +52,8 @@ import ExportVentes from "../pages/kpi/ExportVentes";
 // Caisse
 import CaisseMouvementGeneralForm from "../pages/caisse/CaisseMouvementGeneralForm";
 import EncaissementVenteForm from "../pages/caisse/EncaissementVenteForm";
+import CaisseMouvementList from "../pages/caisse/CaisseMouvementList";
+import CaisseDashboard from "../pages/caisse/CaisseDashboard";
 
 const AppRoutes = () => {
   return (
@@ -107,6 +109,8 @@ const AppRoutes = () => {
         <Route path="/livraison/:id" element={<LivraisonDetail />} />
 
         {/* Caisse */}
+        <Route path="/caisse/dashboard" element={<CaisseDashboard />} />
+        <Route path="/caisse/mouvements" element={<CaisseMouvementList />} />
         <Route path="/caisse/mouvements/creer" element={<CaisseMouvementGeneralForm />} />
         <Route path="/caisse/mouvements/encaisser" element={<EncaissementVenteForm />} />
 
