@@ -3,6 +3,7 @@ package com.app.gestion.service;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.repository.UniteRepository;
 import com.app.gestion.model.Unite;
 
@@ -19,6 +20,12 @@ public class UniteService {
                 .orElseThrow(() -> new Exception("Unité avec l'id :" + id + " introuvable"));
     }
 
+    @AiTool(
+        name = "recuperer_toutes_unites",
+        description = "Récupère la liste complète de toutes les unités de mesure configurées dans le système (ex: kg, litre, pièce, mètre, etc.). Chaque unité contient un nom et une abréviation. Permet de connaître les unités disponibles pour la saisie des quantités d'articles.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<Unite> getAllUnites() {
         return uniteRepository.findAll();
     }

@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.model.Achat;
 import com.app.gestion.model.AchatProcess;
 import com.app.gestion.model.AchatLigne;
@@ -142,6 +143,13 @@ public class AchatService {
     @Autowired
     private LotService lotService;
 
+    @AiTool(
+        name = "creer_achat",
+        description = "Crée une nouvelle demande d'achat avec la liste des articles à commander, quantités et prix unitaires estimés. Génère automatiquement une référence unique (ACH-), enregistre le demandeur, la date de création et la date effective souhaitée. Initialise la demande au processus 'Créé' et historise l'opération pour audit. Première étape du workflow d'approvisionnement.",
+        domain = "achat",
+        readOnly = false,
+        dangerous = false
+    )
     public Achat createAchat(AchatCreateDTO achatDTO) {
         LocalDateTime now = LocalDateTime.now();
         Utilisateur currentUser = currentUserUtil.getCurrentUser();
@@ -207,6 +215,12 @@ public class AchatService {
         return achatProcessRepository.findAll();
     }
 
+    @AiTool(
+        name = "recuperer_tous_achats",
+        description = "Récupère la liste complète de toutes les demandes d'achat dans le système avec leurs informations principales (référence, demandeur, dates, statut du processus, lignes d'articles). Permet de consulter l'ensemble des demandes d'approvisionnement tous statuts confondus (créées, en validation, validées, commandées, livrées).",
+        domain = "achat",
+        readOnly = true
+    )
     public List<AchatCPL> getAllAchat() {
         List<Achat> achats = achatRepository.findAllWithDemandeurAndProcess();
         List<AchatCPL> achatCPLs = new ArrayList<>();
@@ -216,12 +230,25 @@ public class AchatService {
         return achatCPLs;
     }
 
+    @AiTool(
+        name = "recuperer_achat_par_id",
+        description = "Récupère les détails complets d'une demande d'achat spécifique à partir de son identifiant unique. Retourne toutes les informations incluant la référence, le demandeur, les dates (création, effective), le statut du processus de validation, et la liste détaillée des articles avec quantités et prix.",
+        domain = "achat",
+        readOnly = true
+    )
     public AchatCPL getAchatById(Integer id) {
         Achat achat = achatRepository.findByIdWithDemandeurAndProcess(id)
                 .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
         return AchatCPL.mapToDTO(achat);
     }
 
+    @AiTool(
+        name = "valider_achat_magasinier",
+        description = "Valide une demande d'achat par le magasinier. Vérifie que la demande est au statut approprié (processus valeur 1), puis fait progresser le workflow vers le statut 'Validé Magasinier' (valeur 11). Historise le changement de statut et enregistre l'action pour l'audit. Étape intermédiaire avant la validation financière.",
+        domain = "achat",
+        readOnly = false,
+        dangerous = false
+    )
     public Achat validerMagasinier(Integer id) {
         Achat achat = achatRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));
@@ -263,6 +290,13 @@ public class AchatService {
         return achatRepository.save(achat);
     }
 
+    @AiTool(
+        name = "valider_achat_financier",
+        description = "Valide une demande d'achat par le service financier. Vérifie que la demande est au statut 'Validé Magasinier' (valeur 11), calcule le montant total de la commande, vérifie la disponibilité des fonds en caisse, puis fait progresser vers le statut 'Validé Financier' (valeur 21). Historise et audite l'opération. Contrôle financier avant autorisation de commande.",
+        domain = "achat",
+        readOnly = false,
+        dangerous = false
+    )
     public Achat validerFinancier(Integer id) {
         Achat achat = achatRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Achat not found with id " + id));

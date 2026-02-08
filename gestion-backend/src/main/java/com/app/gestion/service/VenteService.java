@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.vente.VenteLigneDto;
 import com.app.gestion.dto.vente.VenteRequestDto;
 import com.app.gestion.dto.vente.VenteResponseDto;
@@ -44,12 +45,24 @@ public class VenteService {
     private final EntityDepotRepository entityDepotRepository;
     private final StockReservationService stockReservationService;
 
+    @AiTool(
+        name = "recuperer_toutes_ventes",
+        description = "Récupère la liste paginée de toutes les commandes de vente avec leurs informations complètes (référence, client, dates, montants, statut, lignes de commande). Permet de consulter l'ensemble des ventes avec pagination pour une navigation efficace sur de grandes quantités de données.",
+        domain = "vente",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public Page<VenteResponseDto> getAllVentes(Pageable pageable) {
         Page<Vente> ventePage = venteRepository.findAll(pageable);
         return ventePage.map(this::mapToResponseDto);
     }
 
+    @AiTool(
+        name = "recuperer_vente_par_id",
+        description = "Récupère les détails complets d'une commande de vente spécifique à partir de son identifiant unique. Retourne toutes les informations incluant le client, les dates (entrée, effective, livraison), le lieu de livraison, les remises, le prix total, le statut du processus et la liste détaillée des articles commandés.",
+        domain = "vente",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public VenteResponseDto getVenteById(Integer id) {
         Vente vente = venteRepository.findById(id)
@@ -60,6 +73,13 @@ public class VenteService {
     /**
      * 3.1 Création commande depuis pro-forma
      */
+    @AiTool(
+        name = "creer_vente_depuis_proforma",
+        description = "Crée une nouvelle commande de vente à partir d'un devis pro-forma validé. Copie automatiquement les informations du pro-forma (client, articles, quantités, prix, remises) vers la commande, génère une référence unique, calcule les prix avec TVA, réserve le stock nécessaire et historise la création pour l'audit. Processus de conversion standard d'un devis en commande ferme.",
+        domain = "vente",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public VenteResponseDto createFromProforma(Integer proformaId, VenteRequestDto requestDto) {
         // Récupérer le pro-forma
@@ -136,6 +156,13 @@ public class VenteService {
     /**
      * 3.1 Création commande directe (sans pro-forma)
      */
+    @AiTool(
+        name = "creer_vente_directe",
+        description = "Crée une nouvelle commande de vente directement sans passer par un pro-forma. Permet de saisir rapidement une commande en spécifiant le client, les articles, quantités, prix unitaires, remises et dates. Génère automatiquement une référence unique, calcule le prix total avec TVA, réserve le stock et historise l'opération. Utile pour les ventes urgentes ou sans devis préalable.",
+        domain = "vente",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public VenteResponseDto createDirectVente(VenteRequestDto requestDto) {
         // Validation des lignes pour les ventes directes

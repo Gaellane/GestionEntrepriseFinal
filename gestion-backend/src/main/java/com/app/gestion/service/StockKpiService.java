@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.stock.StockKpiDTO;
 import com.app.gestion.model.Article;
 import com.app.gestion.model.Lot;
@@ -36,6 +37,12 @@ public class StockKpiService {
         this.categorieRepository = categorieRepository;
     }
 
+    @AiTool(
+        name = "calculer_precision_stock",
+        description = "Calcule le taux de précision du stock en comparant les quantités théoriques (calculées à partir des lots) avec les quantités physiques (mesurées lors des inventaires). Retourne le taux de précision global, les stocks totaux, et un détail par article avec les écarts, valorisations et taux individuels. Filtrable par dépôt, catégorie et période. Indicateur clé pour la gestion des stocks et la détection des anomalies.",
+        domain = "stock",
+        readOnly = true
+    )
     public StockKpiDTO calculateStockPrecision(Integer depotId, Integer categoryId, LocalDateTime dateDebut, LocalDateTime dateFin) {
         // 1. Calculer stock théorique (somme des quantités des lots)
         List<Lot> lots = lotRepository.findAll();
@@ -189,6 +196,12 @@ public class StockKpiService {
      * Retourne la liste des articles avec la quantité restante (somme des quantiteRestante des lots)
      * Filtrable par depot et catégorie.
      */
+    @AiTool(
+        name = "obtenir_stock_restant_par_article",
+        description = "Récupère la liste de tous les articles avec leur quantité restante en stock, calculée en additionnant les quantités restantes de tous les lots associés. Permet de filtrer par dépôt et/ou catégorie. Utile pour connaître la disponibilité immédiate des produits et planifier les réapprovisionnements.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<com.app.gestion.dto.stock.ArticleRemainingDTO> getRemainingStockByArticle(Integer depotId, Integer categoryId) {
         List<Lot> lots = lotRepository.findAll();
         if (depotId != null) {

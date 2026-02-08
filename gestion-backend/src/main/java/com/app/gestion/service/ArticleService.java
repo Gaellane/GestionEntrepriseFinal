@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.stock.ArticleDTO;
 import com.app.gestion.model.Article;
 import com.app.gestion.model.Categorie;
@@ -34,6 +35,12 @@ public class ArticleService {
     /**
      * Récupérer tous les articles sans pagination
      */
+    @AiTool(
+        name = "recuperer_tous_articles",
+        description = "Récupère la liste complète de tous les articles du catalogue avec leurs informations détaillées (référence, nom, catégorie, unité, valorisation, description). Utile pour obtenir un aperçu global du catalogue produits.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<ArticleDTO> getAll() {
         List<Article> articles = articleRepository.findAllWithRelations();
         return articles.stream()
@@ -52,6 +59,12 @@ public class ArticleService {
     /**
      * Récupérer un article par ID
      */
+    @AiTool(
+        name = "recuperer_article_par_id",
+        description = "Récupère les informations détaillées d'un article spécifique à partir de son identifiant unique (ID). Retourne la référence, le nom, la catégorie, l'unité de mesure, la valorisation et la description de l'article.",
+        domain = "stock",
+        readOnly = true
+    )
     public ArticleDTO getArticleById(Integer id) {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé avec l'ID: " + id));
@@ -61,6 +74,12 @@ public class ArticleService {
     /**
      * Rechercher des articles par nom ou référence
      */
+    @AiTool(
+        name = "rechercher_articles",
+        description = "Recherche des articles dans le catalogue en utilisant un terme de recherche qui peut correspondre au nom de l'article ou à sa référence. Permet de filtrer rapidement le catalogue pour trouver des produits spécifiques. Supporte la pagination des résultats.",
+        domain = "stock",
+        readOnly = true
+    )
     public Page<ArticleDTO> searchArticles(String searchTerm, Pageable pageable) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             return getAllArticles(pageable);
@@ -72,6 +91,13 @@ public class ArticleService {
     /**
      * Créer un nouvel article
      */
+    @AiTool(
+        name = "creer_article",
+        description = "Crée un nouvel article dans le catalogue avec sa référence unique, son nom, sa catégorie, son unité de mesure, sa valorisation et sa description. Vérifie que la référence n'existe pas déjà dans le système avant la création.",
+        domain = "stock",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public ArticleDTO createArticle(ArticleDTO articleDTO) {
         // Vérifier si la référence existe déjà
@@ -166,6 +192,12 @@ public class ArticleService {
     /**
      * Récupérer les articles par catégorie
      */
+    @AiTool(
+        name = "recuperer_articles_par_categorie",
+        description = "Récupère tous les articles appartenant à une catégorie spécifique. Permet de filtrer le catalogue par type de produit (ex: électronique, alimentaire, etc.). Retourne la liste complète des articles de la catégorie demandée.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<ArticleDTO> getArticlesByCategorie(Integer categorieId) {
         List<Article> articles = articleRepository.findByCategorieId(categorieId);
         return articles.stream()

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.UtilisateurDto;
 import com.app.gestion.model.Entity;
 import com.app.gestion.model.Role;
@@ -93,6 +94,12 @@ public class UtilisateurService {
     }
 
 
+    @AiTool(
+        name = "recuperer_tous_utilisateurs",
+        description = "Récupère la liste complète de tous les utilisateurs enregistrés dans le système avec leurs informations de base (nom, email, rôle, entité). Permet d'obtenir une vue d'ensemble de tous les comptes utilisateurs pour la gestion administrative.",
+        domain = "admin",
+        readOnly = true
+    )
     public List<UtilisateurDto> getAllUtilisateurs()
     {
         List<Utilisateur> utilisateurs = utilisateurRepository.findAll();
