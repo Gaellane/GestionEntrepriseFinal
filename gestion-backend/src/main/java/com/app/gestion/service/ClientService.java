@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.client.ClientRequestDto;
 import com.app.gestion.dto.client.ClientResponseDto;
 import com.app.gestion.dto.common.PageResponseDto;
@@ -36,12 +37,24 @@ public class ClientService {
     private final AuditLogRepository auditLogRepository;
     private final ActionRepository actionRepository;
 
+    @AiTool(
+        name = "recuperer_tous_clients",
+        description = "Récupère la liste paginée de tous les clients enregistrés dans le système avec leurs informations complètes (nom, contact, adresse, coordonnées bancaires). Permet de consulter l'ensemble du portefeuille clients avec pagination pour gérer de grandes quantités de données.",
+        domain = "client",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public PageResponseDto<ClientResponseDto> getAllClients(Pageable pageable) {
         Page<Client> clientPage = clientRepository.findAll(pageable);
         return mapToPageResponse(clientPage);
     }
 
+    @AiTool(
+        name = "rechercher_clients",
+        description = "Recherche des clients dans la base de données en utilisant un terme de recherche qui peut correspondre au nom du client, au contact ou à l'adresse. Si aucun terme n'est fourni, retourne tous les clients. Supporte la pagination des résultats pour une navigation efficace.",
+        domain = "client",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public PageResponseDto<ClientResponseDto> searchClients(String searchTerm, Pageable pageable) {
         Page<Client> clientPage;
@@ -53,6 +66,12 @@ public class ClientService {
         return mapToPageResponse(clientPage);
     }
 
+    @AiTool(
+        name = "recuperer_client_par_id",
+        description = "Récupère les informations détaillées d'un client spécifique à partir de son identifiant unique (ID). Retourne le nom du client, ses coordonnées de contact, son adresse physique et ses coordonnées bancaires.",
+        domain = "client",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public ClientResponseDto getClientById(Integer id) {
         Client client = clientRepository.findById(id)
@@ -60,6 +79,13 @@ public class ClientService {
         return mapToResponseDto(client);
     }
 
+    @AiTool(
+        name = "creer_client",
+        description = "Crée un nouveau client dans le système avec son nom, ses informations de contact, son adresse et ses coordonnées bancaires. Vérifie que le nom du client n'existe pas déjà dans la base de données pour éviter les doublons. Journalise automatiquement l'action de création pour l'audit.",
+        domain = "client",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public ClientResponseDto createClient(ClientRequestDto requestDto) {
         // Validation métier supplémentaire
@@ -127,6 +153,12 @@ public class ClientService {
         clientRepository.delete(client);
     }
 
+    @AiTool(
+        name = "rechercher_clients_par_nom",
+        description = "Recherche des clients par leur nom en utilisant une recherche insensible à la casse et supportant les correspondances partielles. Utile pour trouver rapidement un client lorsqu'on ne connaît qu'une partie de son nom.",
+        domain = "client",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public List<ClientResponseDto> searchClientsByName(String clientNom) {
         List<Client> clients = clientRepository.findByClientNomContainingIgnoreCase(clientNom);

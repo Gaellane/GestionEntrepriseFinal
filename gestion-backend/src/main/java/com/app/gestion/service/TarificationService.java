@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.tarification.ArticlePrixRequestDto;
 import com.app.gestion.dto.tarification.ArticlePrixResponseDto;
 import com.app.gestion.dto.tarification.ArticleTarifHistoriqueDto;
@@ -39,6 +40,12 @@ public class TarificationService {
                 .collect(Collectors.toList());
     }
 
+    @AiTool(
+        name = "obtenir_historique_prix_article",
+        description = "Récupère l'historique complet des prix d'un article pour une entité spécifique. Retourne la liste chronologique de tous les changements de prix avec leurs dates, le prix actuel, et les informations de l'article (nom, référence). Permet de suivre l'évolution tarifaire d'un produit au fil du temps.",
+        domain = "tarification",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public ArticleTarifHistoriqueDto getHistoriquePrixByArticleEntity(Integer articleEntityId) {
         ArticleEntity articleEntity = articleEntityRepository.findById(articleEntityId)
@@ -69,6 +76,12 @@ public class TarificationService {
         return mapToResponseDto(prix);
     }
 
+    @AiTool(
+        name = "obtenir_dernier_prix_article",
+        description = "Récupère le prix de vente actuel (le plus récent) d'un article à partir de son identifiant. Retourne le prix unitaire en vigueur, utilisé pour les devis et commandes. Recherche automatiquement l'entité active associée à l'article pour obtenir le tarif applicable.",
+        domain = "tarification",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public ArticlePrixResponseDto getLatestPrixByArticleId(Integer articleId) {
         // Récupérer l'ArticleEntity actif pour cet article

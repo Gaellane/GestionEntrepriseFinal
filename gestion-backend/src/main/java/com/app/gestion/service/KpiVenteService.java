@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.reporting.*;
 import com.app.gestion.model.*;
 import com.app.gestion.repository.*;
@@ -38,6 +39,12 @@ public class KpiVenteService {
 
     // =========== 9.1 KPI RESPONSABLE COMMERCIAL ===========
 
+    @AiTool(
+        name = "obtenir_kpi_commercial",
+        description = "Calcule et retourne les indicateurs de performance (KPI) pour le responsable commercial sur une période donnée. Inclut: nombre de commandes en cours, commandes livrées, commandes en retard, taux d'annulation, chiffre d'affaires réalisé, chiffre d'affaires prévisionnel, et comparaisons avec les périodes précédentes. Permet au management de suivre la performance des ventes.",
+        domain = "reporting",
+        readOnly = true
+    )
     public KpiCommercialDto getKpiCommercial(ReportingFilterDto filter) {
         LocalDateTime dateDebut = toStartOfDay(filter.getDateDebut());
         LocalDateTime dateFin = toEndOfDay(filter.getDateFin());

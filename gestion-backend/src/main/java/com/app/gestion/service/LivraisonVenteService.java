@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.livraison.*;
 import com.app.gestion.model.*;
 import com.app.gestion.repository.*;
@@ -43,6 +44,12 @@ public class LivraisonVenteService {
     /**
      * 4.2 - Lister les commandes à préparer (ventes avec process_id = Confirmée)
      */
+    @AiTool(
+        name = "lister_ventes_a_preparer",
+        description = "Récupère la liste de toutes les commandes de vente confirmées (statut 60) qui sont prêtes à être mises en préparation pour livraison. Pour chaque commande, retourne la référence, le client, le prix total, le nombre de lignes, le lieu et la date de livraison prévus, ainsi qu'un indicateur si une livraison existe déjà. Utile pour le service logistique pour planifier les préparations.",
+        domain = "livraison",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public List<VenteAPreparerDto> getVentesAPreparer() {
         // Trouver toutes les ventes confirmées (process_id = 60)
@@ -80,6 +87,13 @@ public class LivraisonVenteService {
      * Copie les lignes de vente_lignes vers livraison_vente_lignes
      * Permet modification des quantités pour livraison partielle
      */
+    @AiTool(
+        name = "creer_livraison_vente",
+        description = "Crée un bon de livraison à partir d'une commande de vente confirmée (statut 60). Génère une référence unique (LIV-), copie les lignes de la commande, initialise le statut à 'En préparation' et historise l'opération. Permet de préparer une livraison complète ou partielle en ajustant les quantités. Point de départ du workflow logistique de livraison.",
+        domain = "livraison",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public LivraisonVenteResponseDto creerLivraison(LivraisonVenteRequestDto requestDto) {
         // Récupérer la vente

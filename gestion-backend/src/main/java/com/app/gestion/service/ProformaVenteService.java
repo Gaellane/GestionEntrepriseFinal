@@ -1,5 +1,6 @@
 package com.app.gestion.service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.dto.proformavente.ProformaVenteLigneDto;
 import com.app.gestion.dto.proformavente.ProformaVenteRequestDto;
 import com.app.gestion.dto.proformavente.ProformaVenteResponseDto;
@@ -39,18 +40,37 @@ public class ProformaVenteService {
     private final TarificationService tarificationService;
     private final UtilisateurRepository utilisateurRepository;
 
+    @AiTool(
+        name = "recuperer_tous_proformas_vente",
+        description = "Récupère la liste paginée de tous les devis pro-forma de vente avec leurs informations complètes (référence, client, dates, montants, statut du processus, lignes de devis). Un pro-forma est un devis préliminaire avant la commande ferme. Permet de consulter l'ensemble des devis en cours et historiques avec pagination.",
+        domain = "vente",
+        readOnly = true
+    )
     @Transactional(readOnly = true)
     public Page<ProformaVenteResponseDto> getAllProformaVentes(Pageable pageable) {
         Page<ProformaVente> proformaPage = proformaVenteRepository.findAll(pageable);
         return proformaPage.map(this::mapToResponseDto);
     }
 
+    @AiTool(
+        name = "recuperer_proforma_vente_par_id",
+        description = "Récupère les détails complets d'un devis pro-forma de vente spécifique à partir de son identifiant unique. Retourne toutes les informations du devis incluant le client, les dates, les remises, le prix total, le statut du processus de validation et la liste détaillée des articles avec quantités et prix unitaires.",
+        domain = "vente",
+        readOnly = true
+    )
     public ProformaVenteResponseDto getProformaVenteById(Integer id) {
         ProformaVente proforma = proformaVenteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pro-forma non trouvé avec l'id: " + id));
         return mapToResponseDto(proforma);
     }
 
+    @AiTool(
+        name = "creer_proforma_vente",
+        description = "Crée un nouveau devis pro-forma de vente avec les informations du client, la liste des articles, quantités, prix et remises. Génère automatiquement une référence unique (PFV-), calcule le prix total avec TVA, applique les tarifs en vigueur si non spécifiés, et valide les remises selon les rôles utilisateur. Crée le devis en statut 'Brouillon' pour modification ultérieure avant validation.",
+        domain = "vente",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public ProformaVenteResponseDto createProformaVente(ProformaVenteRequestDto requestDto) {
         // Validation du client

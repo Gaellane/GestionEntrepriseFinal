@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
+import com.app.gestion.ai.tool.AiTool;
 import com.app.gestion.model.Inventaire;
 import com.app.gestion.model.InventaireHistorique;
 import com.app.gestion.model.InventaireProcess;
@@ -50,6 +51,13 @@ public class InventaireService {
         this.articleRepository = articleRepository;
     }
 
+    @AiTool(
+        name = "creer_demande_inventaire",
+        description = "Crée une nouvelle demande d'inventaire physique pour un dépôt spécifique. L'inventaire permet de comparer les quantités théoriques avec les quantités réellement présentes dans le dépôt. Enregistre l'utilisateur demandeur, la date, le dépôt concerné et des détails optionnels. Historise automatiquement la création avec le statut 'CRE' (Créé).",
+        domain = "stock",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public Inventaire createRequest(Integer utilisateurId, Integer depotId, String details) {
         Utilisateur u = utilisateurRepository.findById(utilisateurId).orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
@@ -82,6 +90,13 @@ public class InventaireService {
         return saved;
     }
 
+    @AiTool(
+        name = "valider_inventaire",
+        description = "Valide une demande d'inventaire physique précédemment créée. La validation confirme que l'inventaire a été réalisé et approuvé par un responsable. Historise l'opération avec le statut 'VAL' (Validé) et enregistre l'utilisateur validateur ainsi que la date de validation. Permet de suivre le workflow de validation des inventaires.",
+        domain = "stock",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public Inventaire validateRequest(Integer inventaireId, Integer validatorUserId) {
         Inventaire inv = inventaireRepository.findById(inventaireId).orElseThrow(() -> new IllegalArgumentException("Inventaire non trouvé"));
@@ -103,6 +118,12 @@ public class InventaireService {
         return inv;
     }
 
+    @AiTool(
+        name = "lister_toutes_demandes_inventaire",
+        description = "Récupère la liste complète de toutes les demandes d'inventaire physique dans le système, tous utilisateurs confondus. Pour chaque inventaire, indique s'il a été validé ou non, le dépôt concerné, l'utilisateur créateur, la date et les détails. Utile pour les responsables pour superviser tous les inventaires en cours et terminés.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<InventaireDTO> listDemandes() {
         var list = inventaireRepository.findAll()
                 .stream()
@@ -115,6 +136,12 @@ public class InventaireService {
         return list;
     }
 
+    @AiTool(
+        name = "lister_demandes_inventaire_utilisateur",
+        description = "Récupère la liste des demandes d'inventaire physique créées par un utilisateur spécifique. Filtre les inventaires selon l'identifiant de l'utilisateur et indique pour chacun s'il a été validé, le dépôt concerné, la date et les détails. Permet à un utilisateur de suivre ses propres demandes d'inventaire.",
+        domain = "stock",
+        readOnly = true
+    )
     public List<InventaireDTO> listDemandesForUser(Integer utilisateurId) {
         var list = inventaireRepository.findByUtilisateur_Id(utilisateurId)
                 .stream()
@@ -127,6 +154,13 @@ public class InventaireService {
         return list;
     }
 
+    @AiTool(
+        name = "ajouter_lignes_inventaire",
+        description = "Ajoute des lignes de comptage à un inventaire existant. Chaque ligne spécifie un article et la quantité physiquement comptée dans le dépôt. Permet de saisir progressivement les résultats du comptage physique article par article. Ces quantités seront ensuite comparées aux quantités théoriques pour calculer les écarts de stock.",
+        domain = "stock",
+        readOnly = false,
+        dangerous = false
+    )
     @Transactional
     public java.util.List<InventaireLigne> addLignesToInventaire(InventaireLigneRequest request) {
         if (request == null || request.getInventaireId() == null) {
