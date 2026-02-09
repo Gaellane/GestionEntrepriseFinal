@@ -87,3 +87,18 @@ export async function getAlertesRupture(filters = {}) {
   const res = await fetch(url, { method: 'GET', headers: authHeaders() });
   return await parseResponse(res);
 }
+
+/**
+ * Récupère le dashboard complet de prédiction (prédictions + stock évolution + tendances clients).
+ * @param {Object} filters - { mois?, annee? }
+ * @returns {Promise<DashboardSummaryDto>}
+ */
+export async function getDashboardSummary(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.mois) params.append('mois', filters.mois);
+  if (filters.annee) params.append('annee', filters.annee);
+
+  const url = `${apiBase}/api/predictions/dashboard${params.toString() ? '?' + params.toString() : ''}`;
+  const res = await fetch(url, { method: 'GET', headers: authHeaders() });
+  return await parseResponse(res);
+}

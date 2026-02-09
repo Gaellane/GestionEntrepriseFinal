@@ -76,4 +76,40 @@ public interface VenteLigneRepository extends JpaRepository<VenteLigne, Integer>
      */
     @Query(value = "SELECT COUNT(*) FROM ventes WHERE refe LIKE 'VH-%'", nativeQuery = true)
     Long countVentesHistoriques();
+
+    /**
+     * Tendances clients : total achats et nb commandes par client et année.
+     * Retourne [client_id, client_nom, annee, nb_commandes, total_montant]
+     */
+    @Query(value = "SELECT v.client_id, c.client_nom, " +
+            "EXTRACT(YEAR FROM v.date_entree)::int AS annee, " +
+            "COUNT(DISTINCT v.id) AS nb_commandes, " +
+            "COALESCE(SUM(vl.quantite * vl.prix_unitaire), 0) AS total_montant " +
+            "FROM vente_lignes vl " +
+            "JOIN ventes v ON vl.vente_id = v.id " +
+            "JOIN vente_processes vp ON v.process_id = vp.id " +
+            "JOIN clients c ON v.client_id = c.id " +
+            "WHERE vp.valeur >= 60 AND vp.valeur < 99 " +
+            "GROUP BY v.client_id, c.client_nom, EXTRACT(YEAR FROM v.date_entree) " +
+            "ORDER BY annee DESC, total_montant DESC",
+            nativeQuery = true)
+    List<Object[]> findTendancesClients();
+
+    /**
+     * Ventes mensuelles totales (tous articles confondus).
+     * Retourne [annee, mois, total_quantite, total_montant]
+     */
+    @Query(value = "SELECT " +
+            "EXTRACT(YEAR FROM v.date_entree)::int AS annee, " +
+            "EXTRACT(MONTH FROM v.date_entree)::int AS mois, " +
+            "COALESCE(SUM(vl.quantite), 0) AS total_quantite, " +
+            "COALESCE(SUM(vl.quantite * vl.prix_unitaire), 0) AS total_montant " +
+            "FROM vente_lignes vl " +
+            "JOIN ventes v ON vl.vente_id = v.id " +
+            "JOIN vente_processes vp ON v.process_id = vp.id " +
+            "WHERE vp.valeur >= 60 AND vp.valeur < 99 " +
+            "GROUP BY EXTRACT(YEAR FROM v.date_entree), EXTRACT(MONTH FROM v.date_entree) " +
+            "ORDER BY annee, mois",
+            nativeQuery = true)
+    List<Object[]> findVentesMensuellesTotales();
 }

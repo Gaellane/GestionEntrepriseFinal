@@ -3,6 +3,7 @@ package com.app.gestion.controller;
 import com.app.gestion.dto.prediction.PredictionSummaryDto;
 import com.app.gestion.dto.prediction.SalesPredictionRequestDto;
 import com.app.gestion.dto.prediction.SalesPredictionResponseDto;
+import com.app.gestion.dto.prediction.DashboardSummaryDto;
 import com.app.gestion.service.prediction.StockPredictionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -137,6 +138,31 @@ public class PredictionController {
             return ResponseEntity.ok(alertes);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Dashboard complet : prédictions + évolution stock + tendances clients.
+     * Un seul appel pour alimenter tout le dashboard frontend.
+     */
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardSummaryDto> getDashboard(
+            @RequestParam(required = false) Integer mois,
+            @RequestParam(required = false) Integer annee) {
+
+        LocalDate now = LocalDate.now();
+        int moisCible = mois != null ? mois : (now.getMonthValue() % 12) + 1;
+        int anneeCible = annee != null ? annee : (moisCible == 1 ? now.getYear() + 1 : now.getYear());
+
+        log.info("Dashboard complet demandé pour {}/{}", moisCible, anneeCible);
+
+        try {
+            DashboardSummaryDto dashboard = stockPredictionService.getDashboardSummary(moisCible, anneeCible);
+            return ResponseEntity.ok(dashboard);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.ok(DashboardSummaryDto.builder()
+                    .modeleDisponible(false)
+                    .build());
         }
     }
 }
