@@ -55,6 +55,8 @@ import PredictionDashboard from "../pages/prediction/PredictionDashboard";
 // Caisse
 import CaisseMouvementGeneralForm from "../pages/caisse/CaisseMouvementGeneralForm";
 import EncaissementVenteForm from "../pages/caisse/EncaissementVenteForm";
+import CaisseMouvementList from "../pages/caisse/CaisseMouvementList";
+import CaisseDashboard from "../pages/caisse/CaisseDashboard";
 
 const AppRoutes = () => {
   return (
@@ -63,7 +65,7 @@ const AppRoutes = () => {
       <Route path='/login' element={<Login />} />
       <Route path="/" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      
+
       {/* Routes non protégées pour le stock (legacy) */}
       <Route path='/stock' element={<MvtStockSaisie />} />
       <Route path='/stock/:type' element={<MvtStockSaisie />} />
@@ -72,10 +74,10 @@ const AppRoutes = () => {
       <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
         {/* Accueil */}
         <Route path="/home" element={<HomePage />} />
-        
+
         {/* Articles */}
         <Route path="/articles" element={<ListeArticle />} />
-        
+
         {/* Achats */}
         <Route path="/achats/demandes" element={<AchatList />} />
         <Route path="/achats/fiche/:id" element={<AchatFiche />} />
@@ -110,6 +112,8 @@ const AppRoutes = () => {
         <Route path="/livraison/:id" element={<LivraisonDetail />} />
 
         {/* Caisse */}
+        <Route path="/caisse/dashboard" element={<CaisseDashboard />} />
+        <Route path="/caisse/mouvements" element={<CaisseMouvementList />} />
         <Route path="/caisse/mouvements/creer" element={<CaisseMouvementGeneralForm />} />
         <Route path="/caisse/mouvements/encaisser" element={<EncaissementVenteForm />} />
 
@@ -121,28 +125,28 @@ const AppRoutes = () => {
         <Route path="/prediction/dashboard" element={<PredictionDashboard />} />
 
         {/* Stock et Inventaire */}
-        <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
-        <Route path="/stock/ajustements" element={<AjustementStock/>} />
-        <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
-        <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
+        <Route path="/stock/dashboard" element={<DashboardRespMagasin />} />
+        <Route path="/stock/ajustements" element={<AjustementStock />} />
+        <Route path="/stock/articles-remaining" element={<ArticlesRemaining />} />
+        <Route path="/stock/inventaires" element={<DemandeInventaires />} />
         <Route path="/stock/:type" element={<MvtStockSaisie />} />
         {/* <Route path="/stock/2" element={<MvtStockSaisie />} />
         <Route path="/stock/transfer" element={<MvtStockSaisie />} /> */}
 
         {/* Inventaire */}
-        <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />
-        <Route path="/inventaire/form/new" element={<InventaireForm/>} />
-        <Route path="/inventaire/form/:id" element={<InventaireForm/>} />
-        <Route path="/inventaire/perform/:id" element={<InventairePerform/>} />
+        <Route path="/inventaire/mes-demandes" element={<DemandeInventaires />} />
+        <Route path="/inventaire/form/new" element={<InventaireForm />} />
+        <Route path="/inventaire/form/:id" element={<InventaireForm />} />
+        <Route path="/inventaire/perform/:id" element={<InventairePerform />} />
 
         {/* Configuration */}
         <Route path="/configurations" element={<ConfigurationList />} />
 
         {/* Administration */}
-        <Route path="/admin/audit-logs" element={<AuditLogs/>} />
-        <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
-        <Route path="/admin/roles-validation" element={<RolesValidation/>} />
-        
+        <Route path="/admin/audit-logs" element={<AuditLogs />} />
+        <Route path="/admin/roles-attribution" element={<RolesAssignment />} />
+        <Route path="/admin/roles-validation" element={<RolesValidation />} />
+
         <Route path="/articles">
           <Route index element={<ListeArticle />} />
         </Route>

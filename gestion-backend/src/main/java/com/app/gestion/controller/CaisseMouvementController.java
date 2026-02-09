@@ -25,8 +25,7 @@ public class CaisseMouvementController {
                     request.getMontant(),
                     request.getTypeMouvementId(),
                     request.getEntityId(),
-                    request.getDetails()
-            );
+                    request.getDetails());
             return ResponseEntity.ok(cm);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -41,8 +40,7 @@ public class CaisseMouvementController {
                     request.getMontant(),
                     request.getTypeMouvementId(),
                     request.getEntityId(),
-                    request.getDetails()
-            );
+                    request.getDetails());
             return ResponseEntity.ok(cm);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -56,6 +54,57 @@ public class CaisseMouvementController {
             return ResponseEntity.ok(mouvements);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @GetMapping("/api/caisse-mouvements")
+    public ResponseEntity<List<CaisseMouvement>> getAllMouvements() {
+        try {
+            List<CaisseMouvement> mouvements = caisseMouvementService.getAllMouvements();
+            return ResponseEntity.ok(mouvements);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @GetMapping("/api/caisse-mouvements/solde")
+    public ResponseEntity<?> getSolde() {
+        try {
+            Double solde = caisseMouvementService.getMontantEnCaisse();
+            return ResponseEntity.ok(java.util.Map.of("solde", solde));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/api/caisse-mouvements/stats")
+    public ResponseEntity<?> getStats(
+            @RequestParam(required = false) String dateDebut,
+            @RequestParam(required = false) String dateFin) {
+        try {
+            java.time.LocalDateTime debut = dateDebut != null
+                    ? java.time.LocalDate.parse(dateDebut).atStartOfDay()
+                    : java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            java.time.LocalDateTime fin = dateFin != null
+                    ? java.time.LocalDate.parse(dateFin).atTime(23, 59, 59)
+                    : java.time.LocalDateTime.now();
+
+            Double encaissements = caisseMouvementService.getEncaissements(debut, fin);
+            Double remboursements = caisseMouvementService.getRemboursements(debut, fin);
+            Double solde = caisseMouvementService.getMontantEnCaisse();
+            List<Object[]> parType = caisseMouvementService.getMouvementsParType(debut, fin);
+
+            java.util.List<java.util.Map<String, Object>> parTypeList = parType.stream()
+                    .map(row -> java.util.Map.<String, Object>of("type", row[0], "total", row[1]))
+                    .toList();
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "solde", solde,
+                    "encaissements", encaissements,
+                    "remboursements", remboursements,
+                    "parType", parTypeList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

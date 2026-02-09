@@ -228,14 +228,29 @@ export const SIDEBAR_CONFIG = {
       permission: PERMISSIONS.VIEW_CAISSE,
       subItems: [
         {
+          id: 'dashboard-caisse',
+          label: 'Dashboard',
+          path: '/caisse/dashboard',
+          icon: <ChartBarIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
+          permission: PERMISSIONS.VIEW_CAISSE,
+        },
+        {
+          id: 'historique-caisse',
+          label: 'Historique',
+          path: '/caisse/mouvements',
+          icon: <ListBulletIcon className="w-4 h-4" />,
+          roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
+          permission: PERMISSIONS.VIEW_CAISSE,
+        },
+        {
           id: 'mouvement-caisse',
           label: 'Nouveau mouvement',
           path: '/caisse/mouvements/creer',
           icon: <PlusCircleIcon className="w-4 h-4" />,
           roles: [ROLES.ADMIN, ROLES.RESP_VENTE],
           permission: PERMISSIONS.CREATE_CAISSE_MOVEMENT,
-        }
-        ,
+        },
         {
           id: 'encaisser-vente',
           label: 'Encaisser vente',
