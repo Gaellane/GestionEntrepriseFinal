@@ -52,7 +52,7 @@ public class LotMouvementController {
     public ApiResponse<MovementFormData> getTransferFormData() {
         try {
             List<com.app.gestion.dto.stock.ArticleDTO> articles = articleService.getAll();
-            List<DepotDTO> depots = depotService.getAllForCurrentUser();
+            List<DepotDTO> depots = depotService.getAll();
             List<com.app.gestion.dto.stock.RaisonMouvementDTO> raisons = raisonMouvementService.getAllRaisons();
 
             MovementFormData data = MovementFormData.builder()
@@ -132,7 +132,7 @@ public class LotMouvementController {
             // load data
             List<ArticleDTO> articles = articleService.getAll();
             int movementType = (type == null) ? 1 : type;
-            List<DepotDTO> depots = depotService.getAllForCurrentUser();
+            List<DepotDTO> depots = depotService.getAll ();
             List<com.app.gestion.dto.stock.RaisonMouvementDTO> raisons = raisonMouvementService
                     .getRaisonsForMovement(movementType);
 

@@ -23,7 +23,7 @@ export async function getAllDepots() {
  * Récupère les dépôts de l'utilisateur connecté
  */
 export async function getDepotsForCurrentUser() {
-  const url = `${apiBase}/api/depots/user`;
+  const url = `${apiBase}/api/depots`;
   const res = await fetch(url, {
     method: 'GET',
     headers: authHeaders()
