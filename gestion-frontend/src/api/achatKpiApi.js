@@ -68,5 +68,6 @@ export async function getAllKpis(dateMin, dateMax) {
     headers: authHeaders()
   });
   const data = await res.json();
+  console.log("KPI Achats data:", data);
   return data;
 }

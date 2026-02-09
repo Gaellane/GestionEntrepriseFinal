@@ -49,6 +49,9 @@ import LivraisonDetail from "../pages/livraison/LivraisonDetail";
 import DashboardKpi from "../pages/kpi/DashboardKpi";
 import ExportVentes from "../pages/kpi/ExportVentes";
 
+// Prediction IA
+import PredictionDashboard from "../pages/prediction/PredictionDashboard";
+
 // Caisse
 import CaisseMouvementGeneralForm from "../pages/caisse/CaisseMouvementGeneralForm";
 import EncaissementVenteForm from "../pages/caisse/EncaissementVenteForm";
@@ -117,6 +120,9 @@ const AppRoutes = () => {
         {/* Reporting / KPI */}
         <Route path="/reporting/dashboard" element={<DashboardKpi />} />
         <Route path="/reporting/export" element={<ExportVentes />} />
+
+        {/* Prédiction IA */}
+        <Route path="/prediction/dashboard" element={<PredictionDashboard />} />
 
         {/* Stock et Inventaire */}
         <Route path="/stock/dashboard" element={<DashboardRespMagasin />} />

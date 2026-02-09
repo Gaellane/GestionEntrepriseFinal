@@ -24,6 +24,13 @@ public interface LotRepository extends JpaRepository<Lot, Integer> {
                         @Param("depotId") Integer depotId);
 
         /**
+         * Calculer le stock total (tous dépôts confondus) pour un article
+         */
+        @Query("SELECT COALESCE(SUM(l.quantiteRestante), 0.0) FROM Lot l " +
+                        "WHERE l.article.id = :articleId")
+        Double calculerStockTotalParArticle(@Param("articleId") Integer articleId);
+
+        /**
          * 4.3 - Trouver les lots disponibles pour un article dans un dépôt
          * en ordre FIFO (First In First Out) - par date d'arrivée
          * Exclut les lots expirés

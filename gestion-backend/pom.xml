@@ -135,6 +135,13 @@
 			<type>pom</type>
 		</dependency>
 
+		<!-- SMILE Machine Learning - Random Forest pour prédiction stock -->
+		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>3.1.1</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

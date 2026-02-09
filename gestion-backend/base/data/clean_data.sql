@@ -40,7 +40,7 @@ INSERT INTO roles (role_code, role_name, niveau_acces, department_id) VALUES
 INSERT INTO actions (action_name, description) VALUES
 -- Actions generales
 ('CREATE', 'Creation d un nouvel enregistrement'),
-('UPDATE', 'Mise à jour d un enregistrement existant'),
+('UPDATE', 'Mise a jour d un enregistrement existant'),
 ('DELETE', 'Suppression d un enregistrement'),
 ('VIEW', 'Consultation d un enregistrement'),
 ('VALIDATE', 'Validation d un enregistrement'),
@@ -51,12 +51,12 @@ INSERT INTO actions (action_name, description) VALUES
 ('REQUEST', 'Creation d une demande d achat'),
 ('ORDER', 'Creation d une commande d achat'),
 ('CONFIRM_FUNDS', 'Confirmation de disponibilite des fonds'),
-('CLOSE_ORDER', 'Clôture d une commande d achat'),
+('CLOSE_ORDER', 'Cloture d une commande d achat'),
 -- Stock / Magasin
 ('RECEIVE', 'Reception de marchandises'),
 ('RETURN', 'Retour de marchandises'),
 ('ADJUST', 'Ajustement des niveaux de stock'),
-('TRANSFER', 'Transfert de marchandises entre depôts'),
+('TRANSFER', 'Transfert de marchandises entre depots'),
 ('RESERVE', 'Reservation de stock'),
 ('RELEASE', 'Liberation de stock reserve'),
 ('INVENTORY', 'Realisation d inventaire'),
@@ -73,7 +73,7 @@ INSERT INTO actions (action_name, description) VALUES
 -- Finance
 ('PAY', 'Paiement fournisseur'),
 ('RECONCILE', 'Rapprochement de comptes'),
-('CLOSE_PERIOD', 'Clôture de periode comptable'),
+('CLOSE_PERIOD', 'Cloture de periode comptable'),
 -- Donnees
 ('EXPORT', 'Export de donnees'),
 ('IMPORT', 'Import de donnees'),
@@ -81,8 +81,8 @@ INSERT INTO actions (action_name, description) VALUES
 -- Securite / Audit
 ('LOGIN', 'Connexion utilisateur'),
 ('LOGOUT', 'Deconnexion utilisateur'),
-('DELEGATE', 'Delegation d accès'),
-('REVOKE', 'Revocation d accès delegue');
+('DELEGATE', 'Delegation d acces'),
+('REVOKE', 'Revocation d acces delegue');
 
 -- =====================================================
 -- 4. ENTITIES (Entites)
@@ -98,7 +98,7 @@ INSERT INTO depots (depot_name) VALUES
 ('DEPOT SECONDAIRE');
 
 -- =====================================================
--- 6. ENTITY_DEPOTS (Liaison Entite-Depôt)
+-- 6. ENTITY_DEPOTS (Liaison Entite-Depot)
 -- =====================================================
 INSERT INTO entity_depots (entity_id, depot_id) VALUES
 (1, 1),
@@ -119,8 +119,8 @@ INSERT INTO unites (unite_name, abreviation) VALUES
 ('Unite', 'u'),
 ('Kilogramme', 'kg'),
 ('Litre', 'L'),
-('Pièce', 'pc'),
-('Mètre', 'm'),
+('Piece', 'pc'),
+('Metre', 'm'),
 ('Boîte', 'box');
 
 -- =====================================================
@@ -133,7 +133,7 @@ INSERT INTO categories (categorie_name, description, dluo, dlc) VALUES
 ('Accessoires', 'Sacs, ceintures, foulards et bijoux', NULL, NULL),
 ('Chaussures', 'Chaussures homme, femme, enfant', NULL, NULL),
 ('Lingerie', 'Sous-vêtements et lingerie fine', 365, NULL),
-('Soin du Corps', 'Produits de soin et hygiène corporelle', 365, 180),
+('Soin du Corps', 'Produits de soin et hygiene corporelle', 365, 180),
 ('Maquillage', 'Produits de maquillage professionnels', 365, 180),
 ('Alimentaire', 'Produits alimentaires et consommables', 180, 90),
 ('Nettoyage', 'Produits de nettoyage et d entretien', 730, NULL),
@@ -153,7 +153,7 @@ INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id
 ('PARF-0001', 'Eau de Parfum Oriental 50ml', 'LIFO', 'Parfum oriental signature 50ml', 2, 3),
 ('PARF-0002', 'Eau de Toilette Fraîche 100ml', 'FIFO', 'Parfum leger 100ml', 2, 3),
 -- Cosmetiques
-('COS-0001', 'Crème Visage Nutri 50ml', 'CMUP', 'Crème hydratante visage', 3, 3),
+('COS-0001', 'Creme Visage Nutri 50ml', 'CMUP', 'Creme hydratante visage', 3, 3),
 ('COS-0002', 'Shampooing Doux 1L', 'FIFO', 'Shampooing professionnel 1L', 3, 3),
 -- Accessoires
 ('ACC-0001', 'Sac Cabas Cuir', 'FIFO', 'Sac cabas en cuir pleine fleur', 4, 4),
@@ -164,7 +164,7 @@ INSERT INTO articles (refe, article_nom, valorisation, description, categorie_id
 -- Soin du Corps
 ('SOIN-0001', 'Lotion Corps Hydratante 500ml', 'FIFO', 'Lotion corps nourrissante', 7, 3),
 -- Maquillage
-('MAQ-0001', 'Palette Fards à Paupières', 'CMUP', 'Palette professionnelle 12 couleurs', 8, 4),
+('MAQ-0001', 'Palette Fards a Paupieres', 'CMUP', 'Palette professionnelle 12 couleurs', 8, 4),
 -- Alimentaire
 ('REF001', 'Sucre en poudre', 'LIFO', 'Sucre cristallise en sachet 1kg', 9, 2),
 ('REF002', 'Eau minerale', 'LIFO', 'Bouteille eau 1.5L', 9, 3),
@@ -319,7 +319,7 @@ INSERT INTO inventaire_process (process_name, abreviation, valeur) VALUES
 ('Creation de l inventaire', 'CRE', 1),
 ('Validation inventaire', 'VAL', 2),
 ('Rejet inventaire', 'REJ', 3),
-('Clôture inventaire', 'CLO', 4),
+('Cloture inventaire', 'CLO', 4),
 ('Annulation inventaire', 'ANN', 5);
 
 -- =====================================================
@@ -333,7 +333,7 @@ INSERT INTO caisse_type_mouvements (type_name, valeur) VALUES
 ('Paiement fournisseur', -3);
 
 -- =====================================================
--- 24. ROLES_ATTRIBUTION_PROCESS (Processus attribution rôles)
+-- 24. ROLES_ATTRIBUTION_PROCESS (Processus attribution roles)
 -- =====================================================
 INSERT INTO roles_attribution_process (process_name, abreviation, valeur) VALUES
 ('Creation de l attribution de role', 'CRE', 1),
