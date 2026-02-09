@@ -35,6 +35,23 @@ public class Message {
     public static Message assistant(String content) {
         return new Message("assistant", content);
     }
+    
+    /**
+     * Crée un message assistant avec un appel d'outil
+     * REQUIS par l'API avant d'envoyer le résultat de l'outil
+     */
+    public static Message assistantToolCall(String toolCallId, String toolName, Map<String, Object> arguments) {
+        Message m = new Message("assistant", null);
+        m.toolCalls = List.of(Map.of(
+            "id", toolCallId,
+            "type", "function",
+            "function", Map.of(
+                "name", toolName,
+                "arguments", toJson(arguments)
+            )
+        ));
+        return m;
+    }
 
     public static Message toolResult(String toolCallId, String toolName, Object result) {
         Message m = new Message("tool", toJson(result));
@@ -47,9 +64,15 @@ public class Message {
         Map<String, Object> map = new HashMap<>();
         map.put("role", role);
         
-        // Ajouter le contenu en priorité
-        if (content != null && !content.isEmpty()) {
+        // Pour les messages assistant avec tool_calls
+        if (toolCalls != null && !toolCalls.isEmpty()) {
+            map.put("tool_calls", toolCalls);
+            // L'API requiert content=null ou vide pour les tool_calls
+            map.put("content", "");
+        } else if (content != null) {
             map.put("content", content);
+        } else {
+            map.put("content", "");
         }
         
         // Pour les réponses d'outils

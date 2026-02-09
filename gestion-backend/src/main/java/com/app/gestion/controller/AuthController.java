@@ -71,6 +71,7 @@ public class AuthController {
             response.put("userId", user.getId());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
