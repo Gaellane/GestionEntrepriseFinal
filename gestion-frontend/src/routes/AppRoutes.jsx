@@ -62,7 +62,7 @@ const AppRoutes = () => {
       <Route path='/login' element={<Login />} />
       <Route path="/" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      
+
       {/* Routes non protégées pour le stock (legacy) */}
       <Route path='/stock' element={<MvtStockSaisie />} />
       <Route path='/stock/:type' element={<MvtStockSaisie />} />
@@ -71,10 +71,10 @@ const AppRoutes = () => {
       <Route path='/' element={<ProtectedRoute> <MainLayout /> </ProtectedRoute>}>
         {/* Accueil */}
         <Route path="/home" element={<HomePage />} />
-        
+
         {/* Articles */}
         <Route path="/articles" element={<ListeArticle />} />
-        
+
         {/* Achats */}
         <Route path="/achats/demandes" element={<AchatList />} />
         <Route path="/achats/fiche/:id" element={<AchatFiche />} />
@@ -119,28 +119,28 @@ const AppRoutes = () => {
         <Route path="/reporting/export" element={<ExportVentes />} />
 
         {/* Stock et Inventaire */}
-        <Route path="/stock/dashboard" element={<DashboardRespMagasin/>} />
-        <Route path="/stock/ajustements" element={<AjustementStock/>} />
-        <Route path="/stock/articles-remaining" element={<ArticlesRemaining/>} />
-        <Route path="/stock/inventaires" element={<DemandeInventaires/>} />
+        <Route path="/stock/dashboard" element={<DashboardRespMagasin />} />
+        <Route path="/stock/ajustements" element={<AjustementStock />} />
+        <Route path="/stock/articles-remaining" element={<ArticlesRemaining />} />
+        <Route path="/stock/inventaires" element={<DemandeInventaires />} />
         <Route path="/stock/:type" element={<MvtStockSaisie />} />
         {/* <Route path="/stock/2" element={<MvtStockSaisie />} />
         <Route path="/stock/transfer" element={<MvtStockSaisie />} /> */}
 
         {/* Inventaire */}
-        <Route path="/inventaire/mes-demandes" element={<DemandeInventaires/>} />
-        <Route path="/inventaire/form/new" element={<InventaireForm/>} />
-        <Route path="/inventaire/form/:id" element={<InventaireForm/>} />
-        <Route path="/inventaire/perform/:id" element={<InventairePerform/>} />
+        <Route path="/inventaire/mes-demandes" element={<DemandeInventaires />} />
+        <Route path="/inventaire/form/new" element={<InventaireForm />} />
+        <Route path="/inventaire/form/:id" element={<InventaireForm />} />
+        <Route path="/inventaire/perform/:id" element={<InventairePerform />} />
 
         {/* Configuration */}
         <Route path="/configurations" element={<ConfigurationList />} />
 
         {/* Administration */}
-        <Route path="/admin/audit-logs" element={<AuditLogs/>} />
-        <Route path="/admin/roles-attribution" element={<RolesAssignment/>} />
-        <Route path="/admin/roles-validation" element={<RolesValidation/>} />
-        
+        <Route path="/admin/audit-logs" element={<AuditLogs />} />
+        <Route path="/admin/roles-attribution" element={<RolesAssignment />} />
+        <Route path="/admin/roles-validation" element={<RolesValidation />} />
+
         <Route path="/articles">
           <Route index element={<ListeArticle />} />
         </Route>

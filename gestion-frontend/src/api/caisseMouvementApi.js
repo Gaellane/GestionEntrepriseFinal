@@ -2,10 +2,10 @@ import api from './index';
 
 // Encaisser une vente
 export const encaisserVente = async (venteId, montant, details = null) => {
-  const response = await api.post('/caisse-mouvements/encaisser-vente', { 
-    venteId, 
-    montant, 
-    details 
+  const response = await api.post('/caisse-mouvements/encaisser-vente', {
+    venteId,
+    montant,
+    details
   });
   return response.data;
 };

@@ -35,7 +35,8 @@ public class CaisseMouvementService {
      * Encaisser une vente - créer un mouvement de caisse
      */
     @Transactional
-    public CaisseMouvement encaisserVente(Integer venteId, Double montant, Integer typeMouvementId, Integer entityId, String details) {
+    public CaisseMouvement encaisserVente(Integer venteId, Double montant, Integer typeMouvementId, Integer entityId,
+            String details) {
         // Vérifier que la vente existe
         Vente vente = venteRepository.findById(venteId)
                 .orElseThrow(() -> new RuntimeException("Vente introuvable: " + venteId));
@@ -82,7 +83,8 @@ public class CaisseMouvementService {
      * Créer un mouvement de caisse générique (vente optionnelle)
      */
     @Transactional
-    public CaisseMouvement createMouvement(Integer venteId, Double montant, Integer typeMouvementId, Integer entityId, String details) {
+    public CaisseMouvement createMouvement(Integer venteId, Double montant, Integer typeMouvementId, Integer entityId,
+            String details) {
         String detailsFinal = details != null ? details : "";
 
         // Si une vente est fournie, tenter de l'utiliser pour enrichir les détails
@@ -179,24 +181,26 @@ public class CaisseMouvementService {
         return user.getEntity();
     }
 
-    public Double getMontantEnCaisse() throws Exception
-    {
-        CaisseTypeMouvement typeEntree = caisseTypeMouvementRepository.findById(1).orElseThrow(()-> new Exception("Donnees sur les types de mouvements non inserees ! Corrigez cela "));
-        CaisseTypeMouvement typeSortie = caisseTypeMouvementRepository.findById(2).orElseThrow(()-> new Exception("Donnees sur les types de mouvements non inserees ! Corrigez cela "));
-        Double entree = caisseMouvementRepository.findMontantTotalByMouvementId(typeEntree.getId()) != null ? caisseMouvementRepository.findMontantTotalByMouvementId(typeEntree.getId()) : 0 ;
-        Double sortie = caisseMouvementRepository.findMontantTotalByMouvementId(typeSortie.getId()) != null ? caisseMouvementRepository.findMontantTotalByMouvementId(typeSortie.getId()) : 0;
+    public Double getMontantEnCaisse() throws Exception {
+        CaisseTypeMouvement typeEntree = caisseTypeMouvementRepository.findById(1)
+                .orElseThrow(() -> new Exception("Donnees sur les types de mouvements non inserees ! Corrigez cela "));
+        CaisseTypeMouvement typeSortie = caisseTypeMouvementRepository.findById(2)
+                .orElseThrow(() -> new Exception("Donnees sur les types de mouvements non inserees ! Corrigez cela "));
+        Double entree = caisseMouvementRepository.findMontantTotalByMouvementId(typeEntree.getId()) != null
+                ? caisseMouvementRepository.findMontantTotalByMouvementId(typeEntree.getId())
+                : 0;
+        Double sortie = caisseMouvementRepository.findMontantTotalByMouvementId(typeSortie.getId()) != null
+                ? caisseMouvementRepository.findMontantTotalByMouvementId(typeSortie.getId())
+                : 0;
 
-        return entree - sortie ; 
+        return entree - sortie;
     }
 
-    public boolean estDepensePossible(Double montantDepense)
-    {
-        try{
-            System.out.println("Montant en caisse:"+getMontantEnCaisse());
-            return getMontantEnCaisse() - montantDepense >= 0 ; 
-        }
-        catch(Exception e)
-        {
+    public boolean estDepensePossible(Double montantDepense) {
+        try {
+            System.out.println("Montant en caisse:" + getMontantEnCaisse());
+            return getMontantEnCaisse() - montantDepense >= 0;
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

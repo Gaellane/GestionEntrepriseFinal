@@ -25,8 +25,7 @@ public class CaisseMouvementController {
                     request.getMontant(),
                     request.getTypeMouvementId(),
                     request.getEntityId(),
-                    request.getDetails()
-            );
+                    request.getDetails());
             return ResponseEntity.ok(cm);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -41,8 +40,7 @@ public class CaisseMouvementController {
                     request.getMontant(),
                     request.getTypeMouvementId(),
                     request.getEntityId(),
-                    request.getDetails()
-            );
+                    request.getDetails());
             return ResponseEntity.ok(cm);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -104,8 +102,7 @@ public class CaisseMouvementController {
                     "solde", solde,
                     "encaissements", encaissements,
                     "remboursements", remboursements,
-                    "parType", parTypeList
-            ));
+                    "parType", parTypeList));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
