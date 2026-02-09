@@ -43,7 +43,7 @@ public class GroqClient {
             .responseTimeout(Duration.ofSeconds(45));
 
         this.webClient = WebClient.builder()
-            .baseUrl("https://api.groq.com/openai/v1")
+            .baseUrl("https://www.apifree.ai/")
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.USER_AGENT, "gestion-ai/1.0")

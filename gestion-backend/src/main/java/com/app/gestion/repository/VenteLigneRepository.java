@@ -54,4 +54,26 @@ public interface VenteLigneRepository extends JpaRepository<VenteLigne, Integer>
     @Query("SELECT DISTINCT vl.article.id FROM VenteLigne vl " +
             "WHERE vl.vente.process.valeur >= 60 AND vl.vente.process.valeur < 99")
     List<Integer> findArticlesAvecVentes();
+
+    /**
+     * DEBUG: Compte les ventes par année pour vérifier la variété des données
+     */
+    @Query(value = "SELECT " +
+            "EXTRACT(YEAR FROM v.date_entree)::int AS annee, " +
+            "COUNT(*) as nb_ventes, " +
+            "SUM(vl.quantite) as total_qty " +
+            "FROM vente_lignes vl " +
+            "JOIN ventes v ON vl.vente_id = v.id " +
+            "JOIN vente_processes vp ON v.process_id = vp.id " +
+            "WHERE vp.valeur >= 60 AND vp.valeur < 99 " +
+            "GROUP BY EXTRACT(YEAR FROM v.date_entree) " +
+            "ORDER BY annee",
+            nativeQuery = true)
+    List<Object[]> debugVentesParAnnee();
+
+    /**
+     * DEBUG: Vérifie si nous avons bien des données historiques (référence VH-)
+     */
+    @Query(value = "SELECT COUNT(*) FROM ventes WHERE refe LIKE 'VH-%'", nativeQuery = true)
+    Long countVentesHistoriques();
 }

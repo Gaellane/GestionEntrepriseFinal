@@ -263,7 +263,7 @@ const PredictionDashboard = () => {
               Prédiction des Ventes & Stock
             </h1>
             <p className="text-gray-500 mt-1">
-              Anticipez les ruptures de stock grâce à l'intelligence artificielle (Random Forest)
+              Anticipez les ruptures de stock grâce à l'IA (Random Forest) — entraîné sur 6 ans d'historique (2020–2025)
             </p>
           </div>
           <button
@@ -364,7 +364,7 @@ const PredictionDashboard = () => {
               onChange={(e) => setAnneeCible(Number(e.target.value))}
               className="rounded-lg border-gray-300 text-sm px-3 py-2 border focus:ring-indigo-500 focus:border-indigo-500"
             >
-              {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(y => (
+              {Array.from({ length: now.getFullYear() - 2020 + 2 }, (_, i) => 2020 + i).map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
@@ -632,7 +632,7 @@ const PredictionDashboard = () => {
           <CpuChipIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">Modèle non entraîné</h3>
           <p className="text-gray-500 mb-6 max-w-md mx-auto">
-            Le moteur de prédiction a besoin d'être entraîné avec vos données historiques de ventes.
+            Le moteur de prédiction a besoin d'être entraîné avec vos 6 années de données historiques de ventes (2020–2025).
             Cliquez sur le bouton ci-dessous pour lancer l'entraînement initial.
           </p>
           <button

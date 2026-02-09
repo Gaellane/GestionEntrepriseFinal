@@ -64,8 +64,8 @@ public class ModelTrainingService {
 
     private static final String GLOBAL_MODEL_FILE = "global_model.smile";
     private static final String[] FEATURE_NAMES = {
-            "mois", "qtyMoisPrec", "qtyMemesMoisAnneePrec",
-            "moyenneMobile3m", "promotion", "tendanceCroissance"
+            "mois", "annee", "qtyMoisPrec", "qtyMemesMoisAnneePrec",
+            "moyenneMobile3m", "moyenneMobile6m", "promotion", "tendanceCroissance"
     };
 
     public ModelTrainingService(TrainingDataService trainingDataService) {
@@ -135,13 +135,16 @@ public class ModelTrainingService {
         }
 
         trainingDataCount = allPoints.size();
-        log.info("Entraînement du modèle global avec {} points de données...", allPoints.size());
+        log.info("Entraînement du modèle global avec {} points...", allPoints.size());
 
         DataFrame df = buildDataFrame(allPoints);
         Formula formula = Formula.lhs("quantiteVendue");
 
         int mtry = Math.max(1, (int) Math.sqrt(allPoints.get(0).toFeatureArray().length));
-        globalModel = RandomForest.fit(formula, df, nTrees, mtry, maxDepth, 500, 1, 0.8);
+        int nodeSize = Math.max(5, allPoints.size() / 100);
+        double subsample = 0.8;
+        
+        globalModel = RandomForest.fit(formula, df, nTrees, mtry, maxDepth, 500, nodeSize, subsample);
 
         // Calcul des métriques
         double[] predictions = new double[allPoints.size()];
@@ -150,9 +153,10 @@ public class ModelTrainingService {
             predictions[i] = globalModel.predict(df.get(i));
             actuals[i] = allPoints.get(i).getQuantiteVendue();
         }
+        
         globalMAE = calculateMAE(predictions, actuals);
         globalR2 = calculateR2(predictions, actuals);
-
+        
         log.info("Modèle global - MAE: {}, R²: {}", String.format("%.2f", globalMAE), String.format("%.4f", globalR2));
     }
 
@@ -193,9 +197,11 @@ public class ModelTrainingService {
     private DataFrame buildDataFrame(List<TrainingDataPoint> points) {
         int n = points.size();
         double[] mois = new double[n];
+        double[] annee = new double[n];
         double[] qtyMoisPrec = new double[n];
         double[] qtyMemesMoisAnneePrec = new double[n];
         double[] moyenneMobile3m = new double[n];
+        double[] moyenneMobile6m = new double[n];
         double[] promotion = new double[n];
         double[] tendanceCroissance = new double[n];
         double[] quantiteVendue = new double[n];
@@ -204,19 +210,23 @@ public class ModelTrainingService {
             TrainingDataPoint p = points.get(i);
             double[] features = p.toFeatureArray();
             mois[i] = features[0];
-            qtyMoisPrec[i] = features[1];
-            qtyMemesMoisAnneePrec[i] = features[2];
-            moyenneMobile3m[i] = features[3];
-            promotion[i] = features[4];
-            tendanceCroissance[i] = features[5];
+            annee[i] = features[1];
+            qtyMoisPrec[i] = features[2];
+            qtyMemesMoisAnneePrec[i] = features[3];
+            moyenneMobile3m[i] = features[4];
+            moyenneMobile6m[i] = features[5];
+            promotion[i] = features[6];
+            tendanceCroissance[i] = features[7];
             quantiteVendue[i] = p.getQuantiteVendue();
         }
 
         return DataFrame.of(
                 DoubleVector.of("mois", mois),
+                DoubleVector.of("annee", annee),
                 DoubleVector.of("qtyMoisPrec", qtyMoisPrec),
                 DoubleVector.of("qtyMemesMoisAnneePrec", qtyMemesMoisAnneePrec),
                 DoubleVector.of("moyenneMobile3m", moyenneMobile3m),
+                DoubleVector.of("moyenneMobile6m", moyenneMobile6m),
                 DoubleVector.of("promotion", promotion),
                 DoubleVector.of("tendanceCroissance", tendanceCroissance),
                 DoubleVector.of("quantiteVendue", quantiteVendue)
@@ -242,11 +252,13 @@ public class ModelTrainingService {
         // Construire un DataFrame à une seule ligne pour la prédiction
         DataFrame df = DataFrame.of(
                 DoubleVector.of("mois", new double[]{features[0]}),
-                DoubleVector.of("qtyMoisPrec", new double[]{features[1]}),
-                DoubleVector.of("qtyMemesMoisAnneePrec", new double[]{features[2]}),
-                DoubleVector.of("moyenneMobile3m", new double[]{features[3]}),
-                DoubleVector.of("promotion", new double[]{features[4]}),
-                DoubleVector.of("tendanceCroissance", new double[]{features[5]})
+                DoubleVector.of("annee", new double[]{features[1]}),
+                DoubleVector.of("qtyMoisPrec", new double[]{features[2]}),
+                DoubleVector.of("qtyMemesMoisAnneePrec", new double[]{features[3]}),
+                DoubleVector.of("moyenneMobile3m", new double[]{features[4]}),
+                DoubleVector.of("moyenneMobile6m", new double[]{features[5]}),
+                DoubleVector.of("promotion", new double[]{features[6]}),
+                DoubleVector.of("tendanceCroissance", new double[]{features[7]})
         );
 
         double prediction = model.predict(df.get(0));

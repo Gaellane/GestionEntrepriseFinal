@@ -33,6 +33,7 @@ public class TrainingDataService {
 
         // Récupère toutes les ventes mensuelles agrégées
         List<Object[]> rawData = venteLigneRepository.findVentesMensuellesParArticle();
+        log.info("Données brutes récupérées: {} lignes", rawData.size());
 
         // Regroupe par articleId
         Map<Integer, List<MonthlyData>> dataByArticle = new LinkedHashMap<>();
@@ -60,9 +61,8 @@ public class TrainingDataService {
         }
 
         int totalPoints = result.values().stream().mapToInt(List::size).sum();
-        log.info("Données d'entraînement préparées : {} articles, {} points de données",
-                result.size(), totalPoints);
-
+        log.info("Données d'entraînement préparées: {} articles, {} points", result.size(), totalPoints);
+        
         return result;
     }
 
@@ -85,9 +85,11 @@ public class TrainingDataService {
     /**
      * Construit les features à partir des données mensuelles brutes.
      * Pour chaque mois, calcule :
+     * - Année (tendance long terme)
      * - Quantité vendue le mois précédent
      * - Quantité vendue le même mois l'année précédente
      * - Moyenne mobile 3 mois
+     * - Moyenne mobile 6 mois
      * - Tendance de croissance
      */
     private List<TrainingDataPoint> buildFeatures(Integer articleId, List<MonthlyData> data) {
@@ -111,8 +113,9 @@ public class TrainingDataService {
 
         List<TrainingDataPoint> points = new ArrayList<>();
 
-        // On commence au 4e mois (besoin d'historique 3 mois)
-        for (int i = 3; i < filledData.size(); i++) {
+        // On commence au 7e mois (besoin d'historique 6 mois pour movingAvg6)
+        int startIdx = Math.min(6, filledData.size());
+        for (int i = startIdx; i < filledData.size(); i++) {
             MonthlyData current = filledData.get(i);
             MonthlyData prev1 = filledData.get(i - 1);
             MonthlyData prev2 = filledData.get(i - 2);
@@ -123,7 +126,15 @@ public class TrainingDataService {
             double qtyLastYear = salesIndex.getOrDefault(sameMonthLastYear, 0.0);
 
             // Moyenne mobile 3 mois
-            double movingAvg = (prev1.quantite() + prev2.quantite() + prev3.quantite()) / 3.0;
+            double movingAvg3 = (prev1.quantite() + prev2.quantite() + prev3.quantite()) / 3.0;
+
+            // Moyenne mobile 6 mois
+            double sum6 = 0;
+            int count6 = Math.min(6, i);
+            for (int j = 1; j <= count6; j++) {
+                sum6 += filledData.get(i - j).quantite();
+            }
+            double movingAvg6 = count6 > 0 ? sum6 / count6 : 0.0;
 
             // Tendance de croissance
             double tendance = prev2.quantite() > 0
@@ -136,8 +147,9 @@ public class TrainingDataService {
                     .annee(current.annee())
                     .quantiteMoisPrecedent(prev1.quantite())
                     .quantiteMemesMoisAnneePrecedente(qtyLastYear)
-                    .moyenneMobile3Mois(movingAvg)
-                    .promotion(0) // Par défaut pas de promotion, extensible
+                    .moyenneMobile3Mois(movingAvg3)
+                    .moyenneMobile6Mois(movingAvg6)
+                    .promotion(0)
                     .tendanceCroissance(tendance)
                     .quantiteVendue(current.quantite())
                     .build());
@@ -181,48 +193,142 @@ public class TrainingDataService {
 
     /**
      * Construit les features pour une prédiction future (sans label connu).
+     * 
+     * Utilise des moyennes saisonnières pour que les features varient selon le mois/année ciblé.
+     * Pour chaque mois futur, on utilise les données historiques du MÊME mois des années précédentes
+     * plutôt que de cascader vers les dernières données globales.
      */
     public double[] buildPredictionFeatures(Integer articleId, int moisCible, int anneeCible, int promotion) {
         List<Object[]> rawData = venteLigneRepository.findVentesMensuellesPourArticle(articleId);
 
-        Map<String, Double> salesIndex = new HashMap<>();
+        // Index par "annee-mois" → quantite
+        Map<String, Double> salesIndex = new LinkedHashMap<>();
+        // Index par mois → liste des quantités historiques (pour moyennes saisonnières)
+        Map<Integer, List<Double>> seasonalIndex = new HashMap<>();
+        // Index par annee → total des quantités (pour tendance inter-annuelle)
+        Map<Integer, Double> yearlyTotals = new TreeMap<>();
+        
         for (Object[] row : rawData) {
             int annee = ((Number) row[0]).intValue();
             int mois = ((Number) row[1]).intValue();
             double quantite = ((Number) row[2]).doubleValue();
             salesIndex.put(annee + "-" + mois, quantite);
+            seasonalIndex.computeIfAbsent(mois, k -> new ArrayList<>()).add(quantite);
+            yearlyTotals.merge(annee, quantite, Double::sum);
         }
 
-        // Mois précédent
+        if (salesIndex.isEmpty()) {
+            return new double[]{moisCible, anneeCible, 0, 0, 0, 0, promotion, 1.0};
+        }
+
+        // === Feature 1: Quantité mois précédent ===
+        // Utilise la donnée réelle si disponible, sinon la moyenne saisonnière du mois précédent
         int prevMonth = moisCible == 1 ? 12 : moisCible - 1;
         int prevYear = moisCible == 1 ? anneeCible - 1 : anneeCible;
         double qtyPrevMonth = salesIndex.getOrDefault(prevYear + "-" + prevMonth, 0.0);
-
-        // Même mois année précédente
-        double qtyLastYear = salesIndex.getOrDefault((anneeCible - 1) + "-" + moisCible, 0.0);
-
-        // Moyenne mobile 3 mois
-        double sum3 = 0;
-        int m = moisCible;
-        int y = anneeCible;
-        for (int i = 0; i < 3; i++) {
-            m--;
-            if (m < 1) { m = 12; y--; }
-            sum3 += salesIndex.getOrDefault(y + "-" + m, 0.0);
+        if (qtyPrevMonth == 0) {
+            // Utiliser la moyenne saisonnière du mois précédent (même mois, années antérieures)
+            List<Double> seasonalPrev = seasonalIndex.getOrDefault(prevMonth, Collections.emptyList());
+            qtyPrevMonth = seasonalPrev.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         }
-        double movingAvg = sum3 / 3.0;
 
-        // Tendance
-        int prev2Month = prevMonth == 1 ? 12 : prevMonth - 1;
-        int prev2Year = prevMonth == 1 ? prevYear - 1 : prevYear;
-        double qtyPrev2Month = salesIndex.getOrDefault(prev2Year + "-" + prev2Month, 0.0);
-        double tendance = qtyPrev2Month > 0 ? qtyPrevMonth / qtyPrev2Month : 1.0;
+        // === Feature 2: Même mois année précédente ===
+        // Cherche le même mois dans les années précédentes (cascade année -1, -2, -3)
+        double qtyLastYear = 0;
+        for (int delta = 1; delta <= 3 && qtyLastYear == 0; delta++) {
+            qtyLastYear = salesIndex.getOrDefault((anneeCible - delta) + "-" + moisCible, 0.0);
+        }
+        if (qtyLastYear == 0) {
+            // Fallback: moyenne saisonnière du même mois
+            List<Double> seasonalSame = seasonalIndex.getOrDefault(moisCible, Collections.emptyList());
+            qtyLastYear = seasonalSame.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        }
+
+        // === Feature 3: Moyenne mobile 3 mois ===
+        // Utilise les 3 mois précédents avec données réelles ou moyennes saisonnières
+        double sum3 = 0;
+        int count3 = 0;
+        for (int i = 1; i <= 3; i++) {
+            int m = moisCible - i;
+            int y = anneeCible;
+            while (m < 1) { m += 12; y--; }
+            
+            Double val = salesIndex.get(y + "-" + m);
+            if (val != null && val > 0) {
+                sum3 += val;
+                count3++;
+            } else {
+                // Utiliser la moyenne saisonnière de ce mois
+                List<Double> seasonal = seasonalIndex.getOrDefault(m, Collections.emptyList());
+                double avg = seasonal.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                if (avg > 0) {
+                    sum3 += avg;
+                    count3++;
+                }
+            }
+        }
+        double movingAvg3 = count3 > 0 ? sum3 / count3 : 0.0;
+
+        // === Feature 4: Moyenne mobile 6 mois ===
+        double sum6 = 0;
+        int count6 = 0;
+        for (int i = 1; i <= 6; i++) {
+            int m = moisCible - i;
+            int y = anneeCible;
+            while (m < 1) { m += 12; y--; }
+            
+            Double val = salesIndex.get(y + "-" + m);
+            if (val != null && val > 0) {
+                sum6 += val;
+                count6++;
+            } else {
+                List<Double> seasonal = seasonalIndex.getOrDefault(m, Collections.emptyList());
+                double avg = seasonal.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                if (avg > 0) {
+                    sum6 += avg;
+                    count6++;
+                }
+            }
+        }
+        double movingAvg6 = count6 > 0 ? sum6 / count6 : 0.0;
+
+        // === Feature 5: Tendance de croissance ===
+        // Calcule la tendance année sur année pour CE mois spécifique
+        List<Double> sameMonthHistory = new ArrayList<>();
+        for (int y = anneeCible - 5; y < anneeCible; y++) {
+            Double val = salesIndex.get(y + "-" + moisCible);
+            if (val != null && val > 0) {
+                sameMonthHistory.add(val);
+            }
+        }
+        
+        double tendance;
+        if (sameMonthHistory.size() >= 2) {
+            // Tendance = ratio dernière valeur / avant-dernière (croissance mois-spécifique)
+            double recent = sameMonthHistory.get(sameMonthHistory.size() - 1);
+            double previous = sameMonthHistory.get(sameMonthHistory.size() - 2);
+            tendance = previous > 0 ? recent / previous : 1.0;
+        } else if (!yearlyTotals.isEmpty()) {
+            // Fallback: tendance globale inter-annuelle
+            List<Double> yearTotals = new ArrayList<>(yearlyTotals.values());
+            if (yearTotals.size() >= 2) {
+                double lastYear = yearTotals.get(yearTotals.size() - 1);
+                double prevYearTotal = yearTotals.get(yearTotals.size() - 2);
+                tendance = prevYearTotal > 0 ? lastYear / prevYearTotal : 1.0;
+            } else {
+                tendance = 1.0;
+            }
+        } else {
+            tendance = 1.0;
+        }
 
         return new double[]{
                 moisCible,
+                anneeCible,
                 qtyPrevMonth,
                 qtyLastYear,
-                movingAvg,
+                movingAvg3,
+                movingAvg6,
                 promotion,
                 tendance
         };

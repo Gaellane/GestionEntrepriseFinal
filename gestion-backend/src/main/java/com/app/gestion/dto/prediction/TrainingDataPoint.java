@@ -39,6 +39,9 @@ public class TrainingDataPoint {
     /** Tendance de croissance (ratio mois courant / mois précédent) */
     private double tendanceCroissance;
 
+    /** Moyenne mobile des 6 derniers mois */
+    private double moyenneMobile6Mois;
+
     /** Label : Quantité réellement vendue ce mois */
     private double quantiteVendue;
 
@@ -46,18 +49,22 @@ public class TrainingDataPoint {
      * Convertit ce point en tableau de features pour SMILE.
      * Ordre des features :
      * [0] mois
-     * [1] quantiteMoisPrecedent
-     * [2] quantiteMemesMoisAnneePrecedente
-     * [3] moyenneMobile3Mois
-     * [4] promotion
-     * [5] tendanceCroissance
+     * [1] annee
+     * [2] quantiteMoisPrecedent
+     * [3] quantiteMemesMoisAnneePrecedente
+     * [4] moyenneMobile3Mois
+     * [5] moyenneMobile6Mois
+     * [6] promotion
+     * [7] tendanceCroissance
      */
     public double[] toFeatureArray() {
         return new double[]{
                 mois,
+                annee,
                 quantiteMoisPrecedent,
                 quantiteMemesMoisAnneePrecedente,
                 moyenneMobile3Mois,
+                moyenneMobile6Mois,
                 promotion,
                 tendanceCroissance
         };
