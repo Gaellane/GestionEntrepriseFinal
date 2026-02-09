@@ -254,7 +254,7 @@ CREATE TABLE lots (
     date_peremption TIMESTAMP,
     quantite DECIMAL(15,2) NOT NULL,
     quantite_restante DECIMAL(15,2) NOT NULL,
-    prix_unitaire DECIMAL(15,2) NOT NULL,
+    prix_unitaire DECIMAL(15,2) NOT NULL
 
 );
 

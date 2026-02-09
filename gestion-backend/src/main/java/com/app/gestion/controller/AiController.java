@@ -1,5 +1,6 @@
 package com.app.gestion.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,8 +36,21 @@ public class AiController {
             
         } catch (Exception e) {
             log.error("Error processing AI request", e);
-            return ResponseEntity.internalServerError()
-                .body(new ChatResponse("Erreur: " + e.getMessage()));
+            
+            String errorMessage = e.getMessage();
+            HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+            
+            // Handle rate limit errors gracefully
+            if (errorMessage != null && (errorMessage.contains("rate_limit") || errorMessage.contains("429"))) {
+                status = HttpStatus.TOO_MANY_REQUESTS;
+                errorMessage = "Le service IA est temporairement surchargé. Veuillez réessayer dans quelques secondes.";
+            } else if (errorMessage != null && errorMessage.contains("Limite de requêtes")) {
+                status = HttpStatus.TOO_MANY_REQUESTS;
+            } else {
+                errorMessage = "Une erreur est survenue lors du traitement de votre demande. Veuillez réessayer.";
+            }
+            
+            return ResponseEntity.status(status).body(new ChatResponse(errorMessage));
         }
     }
 }

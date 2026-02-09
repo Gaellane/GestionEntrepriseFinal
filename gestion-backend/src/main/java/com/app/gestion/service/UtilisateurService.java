@@ -71,7 +71,6 @@ public class UtilisateurService {
                 .role(role)
                 .entity(entity)
                 .build();
-        try {
             // Récupérer le process de validation (id 2)
             RolesAttributionProcess validationProcess = rolesAttributionProcessRepository.findByValeur(2)
                     .orElseThrow(() -> new Exception("Process de validation introuvable"));
@@ -87,10 +86,7 @@ public class UtilisateurService {
             rolesAttributionHistoriqueRepository.save(rolesAttributionHistorique);
 
             return savedUser;
-            
-        } catch (Exception e) {
-            throw new Exception("Erreur lors de l'enregistrement de l'utilisateur");
-        }
+        
     }
 
 
