@@ -4,10 +4,13 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
@@ -26,11 +29,17 @@ import reactor.netty.http.client.HttpClient;
 @Component
 public class GroqClient {
     
+    private static final int MAX_RETRIES = 3;
+    private static final Pattern RETRY_AFTER_PATTERN = Pattern.compile("try again in ([\\d.]+)s");
+    
     @Value("${groq.api.key:}")
     private String apiKey;
     
     @Value("${groq.api.model:llama-3.3-70b-versatile}")
     private String model;
+    
+    @Value("${groq.api.model.fast:llama-3.1-8b-instant}")
+    private String fastModel;
     
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -53,16 +62,83 @@ public class GroqClient {
             .build();
     }
     
+    /**
+     * Chat avec le modèle standard (tools supportés)
+     */
     public GroqResponse chat(List<Message> messages, List<ToolDefinition> tools) {
+        return chatInternal(messages, tools, model);
+    }
+    
+    /**
+     * Chat rapide avec le modèle léger (sans tools, pour requêtes simples)
+     */
+    public GroqResponse chatFast(List<Message> messages) {
+        return chatInternal(messages, null, fastModel);
+    }
+    
+    private GroqResponse chatInternal(List<Message> messages, List<ToolDefinition> tools, String modelToUse) {
         if (apiKey == null || apiKey.isEmpty()) {
             throw new RuntimeException("Groq API key not configured. Set groq.api.key in application.properties");
         }
         
+        int retryCount = 0;
+        Exception lastException = null;
+        
+        while (retryCount < MAX_RETRIES) {
+            try {
+                return executeApiCall(messages, tools, modelToUse);
+            } catch (RuntimeException e) {
+                lastException = e;
+                String message = e.getMessage();
+                
+                // Handle rate limit (429)
+                if (message != null && message.contains("429") && message.contains("rate_limit")) {
+                    retryCount++;
+                    long waitTime = extractWaitTime(message);
+                    
+                    if (retryCount < MAX_RETRIES) {
+                        log.warn("Rate limit hit, waiting {}ms before retry {}/{}", 
+                            waitTime, retryCount, MAX_RETRIES);
+                        try {
+                            Thread.sleep(waitTime);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("Interrupted while waiting for rate limit", ie);
+                        }
+                    }
+                } else {
+                    // Other errors - don't retry
+                    throw e;
+                }
+            }
+        }
+        
+        // All retries exhausted
+        log.error("All {} retries exhausted for Groq API call", MAX_RETRIES);
+        throw new RuntimeException("Limite de requêtes API atteinte. Veuillez réessayer dans quelques secondes.", lastException);
+    }
+    
+    private long extractWaitTime(String errorMessage) {
+        // Try to extract wait time from error message like "try again in 13.19s"
+        Matcher matcher = RETRY_AFTER_PATTERN.matcher(errorMessage);
+        if (matcher.find()) {
+            try {
+                double seconds = Double.parseDouble(matcher.group(1));
+                return (long) (seconds * 1000) + 500; // Add 500ms buffer
+            } catch (NumberFormatException e) {
+                // Fall through to default
+            }
+        }
+        // Default wait time: 15 seconds
+        return 15000;
+    }
+    
+    private GroqResponse executeApiCall(List<Message> messages, List<ToolDefinition> tools, String modelToUse) {
         try {
-            Map<String, Object> requestBody = buildRequestBody(messages, tools);
+            Map<String, Object> requestBody = buildRequestBody(messages, tools, modelToUse);
             
-            log.info("Calling Groq API with {} messages and {} tools", messages.size(), 
-                tools != null ? tools.size() : 0);
+            log.info("Calling Groq API with model={}, {} messages and {} tools", 
+                modelToUse, messages.size(), tools != null ? tools.size() : 0);
             
             if (log.isDebugEnabled()) {
                 try {
@@ -108,9 +184,9 @@ public class GroqClient {
         }
     }
     
-    private Map<String, Object> buildRequestBody(List<Message> messages, List<ToolDefinition> tools) {
+    private Map<String, Object> buildRequestBody(List<Message> messages, List<ToolDefinition> tools, String modelToUse) {
         Map<String, Object> body = new HashMap<>();
-        body.put("model", model);
+        body.put("model", modelToUse);
         
         // Clean and validate messages
         List<Map<String, Object>> messageList = messages.stream()

@@ -4,39 +4,39 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SystemPromptBuilder {
-
+    
+    /**
+     * Prompt système complet (pour référence, non utilisé en production)
+     */
     public static String build() {
         return String.format("""
-        Tu es un assistant intelligent pour un système de gestion d'entreprise.
-        
-        Date et heure actuelles: %s
-        
-        CAPACITÉS:
-        - Tu as accès à des outils (functions) que tu peux appeler pour obtenir des informations ou effectuer des actions
-        - Utilise les outils de manière pertinente quand c'est nécessaire
-        - Si un outil n'est pas disponible, explique-le clairement à l'utilisateur
+        Tu es un assistant pour un système de gestion d'entreprise.
+        Date: %s
         
         RÈGLES:
-        - N'invente JAMAIS de données. Si tu ne sais pas, utilise un outil ou demande.
-        - Sois précis et professionnel dans tes réponses
-        - Pour les calculs, utilise les outils disponibles
-        - Pour les informations en temps réel (dates, heure, données métier), utilise toujours les outils
-        - Réponds en français sauf demande contraire
-        
-        COMPORTEMENT:
-        - Si un outil est nécessaire pour répondre, appelle-le
-        - Si plusieurs outils sont nécessaires, appelle-les successivement
-        - Une fois que tu as toutes les informations nécessaires, fournis une réponse claire et structurée
-        - En cas d'erreur d'un outil, explique-le et propose une alternative si possible
-        """, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+        - N'invente JAMAIS de données - utilise les outils disponibles
+        - Appelle les outils quand nécessaire
+        - Réponds en français, de manière concise
+        - En cas d'erreur d'outil, explique et propose une alternative
+        """, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+    }
+    
+    /**
+     * Prompt système compact pour économiser les tokens
+     */
+    public static String buildCompact() {
+        return String.format("""
+        Assistant gestion d'entreprise. Date: %s
+        RÈGLES CRITIQUES:
+        - Utilise un outil UNE SEULE FOIS maximum - ne répète jamais le même appel
+        - Après avoir reçu le résultat d'un outil, utilise ces données pour répondre
+        - Pour les paramètres optionnels (depotId, categoryId, etc.), omets-les si non spécifiés
+        - N'invente JAMAIS de valeurs - si l'info manque, demande à l'utilisateur
+        - Réponds en français, sois concis et direct
+        """, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
     }
     
     public static String buildWithContext(String userRole, String domain) {
-        return build() + String.format("""
-        
-        CONTEXTE UTILISATEUR:
-        - Rôle: %s
-        - Domaine: %s
-        """, userRole, domain);
+        return buildCompact() + String.format(" Rôle: %s, Domaine: %s", userRole, domain);
     }
 }
